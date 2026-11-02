@@ -1,4 +1,4 @@
-acreate extension if not exists pgcrypto;
+create extension if not exists pgcrypto;
 
 create table if not exists public.staff_memberships (
   user_id uuid primary key references auth.users (id) on delete cascade,
@@ -1435,8 +1435,11 @@ create trigger kbms_sync_student_house_fields before insert or update of house,s
 alter table public.students drop constraint if exists students_grade_check;
 alter table public.students add constraint students_grade_check
   check (length(trim(grade)) between 1 and 60);
+-- Keep class_number as SMALLINT. It supports values up to 32767, which is
+-- far beyond any school class numbering requirement. The original <= 16
+-- restriction is removed, so future school-defined class numbers are allowed.
+-- Keeping the existing type avoids invalidating RLS policies that reference it.
 alter table public.students drop constraint if exists students_class_number_check;
-alter table public.students alter column class_number type integer;
 alter table public.students drop constraint if exists students_class_number_positive;
 alter table public.students add constraint students_class_number_positive
   check (class_number is null or class_number > 0);
