@@ -1,0 +1,19 @@
+{
+  "name": "Kabarak Book Management",
+  "short_name": "Kabarak Books",
+  "description": "Library circulation, textbook register and student services for Moi High School - Kabarak.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7f5f0",
+  "theme_color": "#63082e",
+  "icons": [
+    {
+      "src": "./mhsk-crest.png",
+      "sizes": "350x350",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
