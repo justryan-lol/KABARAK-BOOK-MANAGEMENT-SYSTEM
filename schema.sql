@@ -1,4 +1,4 @@
-create extension if not exists pgcrypto;
+acreate extension if not exists pgcrypto;
 
 create table if not exists public.staff_memberships (
   user_id uuid primary key references auth.users (id) on delete cascade,
@@ -868,9 +868,7 @@ end;
 $$;
 
 revoke all on function public.teacher_allocate_textbooks(jsonb,integer,date) from public, anon;
-revoke all on function public.return_textbook_copy(uuid) from public, anon;
 grant execute on function public.teacher_allocate_textbooks(jsonb,integer,date) to authenticated;
-grant execute on function public.return_textbook_copy(uuid) to authenticated;
 
 -- Teacher visibility is restricted to their currently assigned classes.
 create or replace function public.kbms_teacher_assigned_to_student(p_student_id uuid)
@@ -1001,6 +999,8 @@ begin
   return returned_date;
 end;
 $$;
+revoke all on function public.return_textbook_copy(uuid) from public, anon;
+grant execute on function public.return_textbook_copy(uuid) to authenticated;
 
 -- Replace broad write access with insert-only access for bookstore staff.
 -- Returns go through return_textbook_copy(); history cannot be edited/deleted.
