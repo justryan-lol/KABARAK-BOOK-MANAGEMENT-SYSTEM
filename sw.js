@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "mhsk-kbms-v18";
+const CACHE_NAME = "mhsk-kbms-v19";
 const APP_ASSETS = [
   "./",
   "./index.html",
