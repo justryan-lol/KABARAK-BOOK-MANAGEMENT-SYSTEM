@@ -95,7 +95,7 @@ Deno.serve(async (request: Request) => {
       });
       if (profileError) throw profileError;
 
-      const { error: roleError } = await admin.rpc("admin_set_staff_membership", {
+      const { error: roleError } = await userClient.rpc("admin_set_staff_membership", {
         p_user_id: createdUserId, p_role: role, p_active: true,
       });
       if (roleError) throw roleError;
@@ -131,7 +131,7 @@ Deno.serve(async (request: Request) => {
     if (!roles.has(nextRole)) return reply(400, { error: "Unknown staff role" });
     if (nextRole === "super_admin" && !isSuper) return reply(403, { error: "Only a super administrator can appoint another super administrator" });
     const active = action === "deactivate" ? false : action === "activate" ? true : targetMembership.active;
-    const { error: updateError } = await admin.rpc("admin_set_staff_membership", {
+    const { error: updateError } = await userClient.rpc("admin_set_staff_membership", {
       p_user_id: userId, p_role: nextRole, p_active: active,
     });
     if (updateError) throw updateError;
