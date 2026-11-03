@@ -25,8 +25,10 @@ Deno.serve(async (request: Request) => {
     }
 
     const url = Deno.env.get("SUPABASE_URL");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const publishableKeys = JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS") || "{}");
+    const anonKey = publishableKeys.default || Deno.env.get("SUPABASE_ANON_KEY");
+    const secretKeys = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") || "{}");
+    const serviceKey = secretKeys.default || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!url || !anonKey || !serviceKey) {
       console.error("Required Supabase function secrets are missing");
       return reply(500, { error: "Sign-in service is not configured" });
