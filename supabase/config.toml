@@ -1,0 +1,5 @@
+[functions.kbms-username-login]
+verify_jwt = false
+
+[functions.kbms-staff-admin]
+verify_jwt = true
