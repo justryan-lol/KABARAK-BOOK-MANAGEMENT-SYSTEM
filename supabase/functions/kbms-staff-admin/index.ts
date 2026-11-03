@@ -141,7 +141,11 @@ Deno.serve(async (request: Request) => {
       try {
         const url = Deno.env.get("SUPABASE_URL");
         const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-        if (url && key) await createClient(url, key).auth.admin.deleteUser(createdUserId);
+        if (url && key) {
+          const cleanup = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+          await cleanup.from("staff_profiles").delete().eq("user_id", createdUserId);
+          await cleanup.auth.admin.deleteUser(createdUserId);
+        }
       } catch (cleanupError) { console.error("Failed to roll back incomplete staff account", cleanupError); }
     }
     console.error("Staff administration failed", error);
