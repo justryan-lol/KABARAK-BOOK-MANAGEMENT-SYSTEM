@@ -2430,8 +2430,19 @@
   }
 
   async function authenticate(event) {
-    event.preventDefault();
     const form = event.currentTarget;
+    if (event.submitter?.value === "cancel") {
+      event.preventDefault();
+      const dialog = byId("auth-dialog");
+      if (dialog?.open) dialog.close("cancel");
+      form.reset();
+      byId("auth-error").textContent = "";
+      setAuthFieldError(form.elements.namedItem("username"), false);
+      setAuthFieldError(form.elements.namedItem("password"), false);
+      form.classList.remove("auth-form-reject");
+      return;
+    }
+    event.preventDefault();
     const data = new FormData(form);
     const usernameInput = form.elements.namedItem("username");
     const passwordInput = form.elements.namedItem("password");
