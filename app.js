@@ -790,7 +790,7 @@
       const firstName = firstNames[index % firstNames.length];
       const surname = surnames[Math.floor(index / firstNames.length)];
       const house = houseCodes[index % houseCodes.length];
-      const section = index % 2 === 0 ? "G" : "B";
+      const section = Math.floor(index / 4) % 2 === 0 ? "G" : "B";
       const classNumber = (Math.floor(index / 8) % 4) + 1;
       return makeStudent(
         `DEMO-${String(1001 + index)}`,
@@ -906,11 +906,12 @@
     await writeRecords("staff_profiles", demoStaff);
     const demoYearId = crypto.randomUUID();
     const demoYear = { id: demoYearId, year_label: String(new Date().getFullYear()), starts_on: `${new Date().getFullYear()}-01-01`, ends_on: `${new Date().getFullYear()}-12-31`, is_current: true, status: "active", archived_at: null, created_at: now };
-    const demoClasses = [
-      { id: crypto.randomUUID(), academic_year_id: demoYearId, class_code: "G10-DELTA", display_name: "Grade 10 Delta", grade: "Grade 10", grade_label: "Grade 10", class_label: "Grade 10 Delta", active: true, archived_at: null, created_at: now },
-      { id: crypto.randomUUID(), academic_year_id: demoYearId, class_code: "G10-ALPHA", display_name: "Grade 10 Alpha", grade: "Grade 10", grade_label: "Grade 10", class_label: "Grade 10 Alpha", active: true, archived_at: null, created_at: now },
-    ];
-    const demoSubjects = ["Mathematics", "Integrated Science", "English", "Geography"].map((name) => ({ id: crypto.randomUUID(), name, active: true, created_at: now }));
+    const demoClasses = ["Delta", "Alpha", "Beta", "Gamma"].map((label) => ({
+      id: crypto.randomUUID(), academic_year_id: demoYearId, class_code: `G10-${label.toUpperCase()}`,
+      display_name: `Grade 10 ${label}`, grade: "Grade 10", grade_label: "Grade 10",
+      class_label: `Grade 10 ${label}`, active: true, archived_at: null, created_at: now,
+    }));
+    const demoSubjects = demoBookTitles.map(([name]) => ({ id: crypto.randomUUID(), name, active: true, created_at: now }));
     await writeRecord("academic_years", demoYear);
     await writeRecords("school_classes", demoClasses);
     await writeRecords("school_subjects", demoSubjects);
