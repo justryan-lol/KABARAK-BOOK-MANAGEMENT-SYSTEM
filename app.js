@@ -1732,12 +1732,33 @@
     } else {
       years = await getAll("academic_years"); classes = await getAll("school_classes"); rosterSnapshots = await getAll("class_archive_students");
     }
+    const [loanHistory, textbookHistory] = await Promise.all([getAll("loans"), getAll("textbook_allocations")]);
     const archivedYears = years.filter((year) => Boolean(year.archived_at));
     const archivedIds = new Set(archivedYears.map((year) => year.id));
     const archivedClasses = classes.filter((item) => archivedIds.has(item.academic_year_id) || Boolean(item.archived_at));
     content.innerHTML = `${heading("BOOKSTORE · HISTORICAL RECORDS", "Archives", "Completed academic years and released classes are kept here for reference. Archived records are read-only; historical allocations and returns are never deleted.", '<button class="button button-secondary" data-page-link="year-setup">Back to year setup</button>')}
       <section class="stats-grid">${statCard("ARCHIVED YEARS", archivedYears.length, "Closed academic years")}${statCard("ARCHIVED CLASSES", archivedClasses.length, "Historical class records")}${statCard("CURRENT YEARS", years.filter((year) => year.is_current).length, "Not included in archives")}</section>
       ${archivedYears.length ? archivedYears.map((year) => { const yearClasses = archivedClasses.filter((item) => item.academic_year_id === year.id); return `<section class="panel" style="margin-bottom:16px"><div class="panel-header"><div><h2>${escapeHtml(year.year_label)}</h2><p>${escapeHtml(year.starts_on || "—")} → ${escapeHtml(year.ends_on || "—")} · Archived ${escapeHtml(year.archived_at ? new Date(year.archived_at).toLocaleDateString("en-KE") : "as closed year")}</p></div><span class="status-tag">Archived · Read only</span></div><div class="table-wrap"><table><thead><tr><th>Form / grade</th><th>Class / stream</th><th>Section</th><th>Record status</th></tr></thead><tbody>${yearClasses.length ? yearClasses.map((item) => { const roster = rosterSnapshots.filter((student) => student.class_id === item.id); return `<tr><td>${escapeHtml(item.grade_label || item.grade || "—")}</td><td><strong>${escapeHtml(item.class_label || item.display_name || "—")}</strong><small>${roster.length} student roster record(s)</small></td><td>${escapeHtml(item.school_section || "—")}</td><td><span class="status-tag">Historical · Read only</span></td></tr>${roster.length ? `<tr><td colspan="4"><details><summary>View archived student list (${roster.length})</summary><div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>Admission number</th><th>Student</th><th>House</th><th>Section</th></tr></thead><tbody>${roster.map((student) => `<tr><td class="code-text">${escapeHtml(student.admission_number_snapshot)}</td><td>${escapeHtml(student.full_name_snapshot)}</td><td>${escapeHtml(student.house_code || "—")}</td><td>${escapeHtml(student.school_section || "—")}</td></tr>`).join("")}</tbody></table></div></details></td></tr>` : ""}`; }).join("") : `<tr><td colspan="4" class="table-empty">No class records were attached to this year.</td></tr>`}</tbody></table></div></section>`; }).join("") : `<section class="panel panel-empty"><strong>No archived academic years yet</strong><p>When a completed year is released from Academic Year Setup, it will appear here. Archiving never deletes student or textbook history.</p></section>`}`;
+
+    const archivedTransactions = [
+      ...loanHistory.filter((item) => item.returned_at).map((item) => ({
+        type: "Library", code: item.book_code_snapshot, title: item.book_title_snapshot,
+        student: item.student_name_snapshot, admission: item.student_admission_snapshot,
+        issued: item.issued_at, returned: item.returned_at,
+      })),
+      ...textbookHistory.filter((item) => item.returned_at).map((item) => ({
+        type: "Bookstore", code: item.copy_code_snapshot, title: item.title_snapshot,
+        student: item.student_name_snapshot, admission: item.student_admission_snapshot,
+        issued: item.allocated_at, returned: item.returned_at,
+      })),
+    ].sort((a, b) => String(b.returned).localeCompare(String(a.returned)));
+    const archiveRows = archivedTransactions.map((item) =>
+      "<tr><td><span class=\"status-tag\">" + escapeHtml(item.type) + "</span></td><td class=\"code-text\">" + escapeHtml(item.code || "—") + "</td><td><strong>" + escapeHtml(item.title || "Untitled copy") + "</strong></td><td>" + escapeHtml(item.student || "Unknown student") + "<small>" + escapeHtml(item.admission || "") + "</small></td><td>" + escapeHtml(item.issued || "—") + "</td><td>" + escapeHtml(item.returned || "—") + "</td><td><span class=\"status-tag good\">Returned · Archived</span></td></tr>"
+    ).join("");
+    content.insertAdjacentHTML("beforeend",
+      "<section class=\"panel\" style=\"margin-top:16px\"><div class=\"panel-header\"><div><h2>Completed lending history</h2><p>" + archivedTransactions.length + " returned copies retained across the Library and Bookstore registers</p></div><span class=\"status-tag\">Historical · Read only</span></div><div class=\"table-wrap\"><table><thead><tr><th>Department</th><th>Copy code</th><th>Title</th><th>Student</th><th>Issued</th><th>Returned</th><th>Status</th></tr></thead><tbody>" + (archiveRows || "<tr><td class=\"table-empty\" colspan=\"7\">Returned transactions will appear here and remain available for audit.</td></tr>") + "</tbody></table></div></section>"
+    );
+
   }
 
   async function archiveConnectedAcademicYear(id) {
