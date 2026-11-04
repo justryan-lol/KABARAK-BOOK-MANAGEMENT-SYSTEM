@@ -1156,12 +1156,15 @@
       const loaned = currentLoanFor(book.id, loans);
       const condition = loaned ? "Issued" : book.condition;
       const ageClass = age === null ? "" : age >= 8 ? "danger" : age >= 5 ? "warn" : "good";
-      return `<article class="book-card">${book.cover_image ? `<img class="book-cover" src="${escapeHtml(book.cover_image)}" alt="Cover of ${escapeHtml(book.title)}">` : `<div class="book-cover-placeholder" aria-hidden="true">BOOK</div>`}<div class="book-card-top"><span class="book-subject">${escapeHtml(book.subject || "Subject not recorded")}</span><span class="status-tag ${condition === "Available" ? "good" : condition === "Lost" || condition === "Damaged" ? "danger" : "warn"}">${escapeHtml(condition)}</span></div><h3>${escapeHtml(book.title)}</h3><p class="code-text">${escapeHtml(book.accession_code)}</p>${book.description ? `<p class="book-description">${escapeHtml(book.description)}</p>` : ""}<dl><div><dt>Publisher</dt><dd>${escapeHtml(book.publisher || "Not recorded")}</dd></div><div><dt>Purchase year</dt><dd>${escapeHtml(book.purchase_year || "Not recorded")}</dd></div><div><dt>Age</dt><dd><span class="status-tag ${ageClass}">${age === null ? "Not recorded" : `${age} yr`}</span></dd></div></dl>${canManageLibrary() ? `<button class="footer-link" data-edit-book="${escapeHtml(book.id)}">Edit copy</button>` : ""}</article>`;
+      const loaned = currentLoanFor(book.id, loans);
+      const fee = loaned ? lateFeeKes(loaned) : 0;
+      const copyAction = canManageLibrary() ? (loaned ? `<button class="button button-secondary button-small" data-return-loan="${escapeHtml(loaned.id)}">Record return</button>` : condition === "Available" ? `<button class="button button-primary button-small" data-issue-book="${escapeHtml(book.id)}">Issue copy</button>` : "") : "";
+      return `<article class="book-card">${book.cover_image ? `<img class="book-cover" src="${escapeHtml(book.cover_image)}" alt="Cover of ${escapeHtml(book.title)}">` : `<div class="book-cover-placeholder" aria-hidden="true">BOOK</div>`}<div class="book-card-top"><span class="book-subject">${escapeHtml(book.subject || "Subject not recorded")}</span><span class="status-tag ${condition === "Available" ? "good" : condition === "Lost" || condition === "Damaged" ? "danger" : "warn"}">${escapeHtml(condition)}</span></div><h3>${escapeHtml(book.title)}</h3><p class="code-text">${escapeHtml(book.accession_code)}</p>${book.description ? `<p class="book-description">${escapeHtml(book.description)}</p>` : ""}<dl><div><dt>Publisher</dt><dd>${escapeHtml(book.publisher || "Not recorded")}</dd></div><div><dt>Purchase year</dt><dd>${escapeHtml(book.purchase_year || "Not recorded")}</dd></div><div><dt>Age</dt><dd><span class="status-tag ${ageClass}">${age === null ? "Not recorded" : `${age} yr`}</span></dd></div></dl>${loaned ? `<p class="inline-hint">Borrowed by ${escapeHtml(loaned.student_name_snapshot)} · Due ${escapeHtml(loaned.due_date || "—")}${fee ? ` · KSh ${fee.toLocaleString("en-KE")} late fee` : ""}</p>` : ""}<div class="heading-actions">${copyAction}${canManageLibrary() ? `<button class="footer-link" data-edit-book="${escapeHtml(book.id)}">Edit copy</button>` : ""}</div></article>`;
     }).join("");
     const emptyMessage = books.length ? "No books match these filters." : "No textbook copies cataloged yet.";
     content.innerHTML = `${heading("LIBRARY COLLECTION", "Library catalog", "Track individual copies, current availability and searchable book details.", canManageLibrary() ? `<div class="heading-actions"><button class="button button-secondary" data-action="import-books">Import CSV</button><button class="button button-primary" data-action="add-book">Add library copy</button></div>` : "")}
       <section class="panel"><div class="panel-header inventory-header"><div><h2>Library collection</h2><p>${filtered.length} of ${books.length} registered cop${books.length === 1 ? "y" : "ies"}</p></div><div class="inventory-toolbar"><div class="toolbar"><div class="search-wrap"><input class="search-input" id="inventory-search" type="search" value="${escapeHtml(state.inventoryQuery)}" placeholder="Search title, description or book code"></div><select class="filter-select" id="inventory-filter" aria-label="Filter inventory">${[["all", "All conditions"], ["Available", "Available"], ["Issued", "Issued"], ["Damaged", "Damaged"], ["Lost", "Lost"]].map(([key, label]) => `<option value="${key}"${state.inventoryFilter === key ? " selected" : ""}>${label}</option>`).join("")}</select></div><div class="segmented inventory-views" aria-label="Catalog layout"><button class="segment-button ${state.inventoryView === "table" ? "active" : ""}" data-inventory-view="table" aria-pressed="${state.inventoryView === "table"}">Table</button><button class="segment-button ${state.inventoryView === "gallery" ? "active" : ""}" data-inventory-view="gallery" aria-pressed="${state.inventoryView === "gallery"}">Gallery</button></div></div></div>
-      ${state.inventoryView === "table" ? `<div class="table-wrap"><table><thead><tr><th>Accession code</th><th>Title</th><th>Subject</th><th>Publisher</th><th>Purchase year</th><th>Age</th><th>Condition</th><th></th></tr></thead><tbody>${bookRows || `<tr><td class="table-empty" colspan="8">${escapeHtml(emptyMessage)}${!books.length && canManageLibrary() ? `<div class="empty-actions"><button class="button button-primary" data-action="add-book">Catalog first book</button></div>` : ""}</td></tr>`}</tbody></table></div>` : `<div class="book-grid">${bookCards || `<div class="panel-empty"><strong>${escapeHtml(emptyMessage)}</strong>${!books.length && canManageLibrary() ? `<button class="button button-primary" data-action="add-book">Catalog first book</button>` : ""}</div>`}</div>`}</section>
+      ${state.inventoryView === "table" ? `<div class="table-wrap"><table><thead><tr><th>Accession code</th><th>Title</th><th>Subject</th><th>Publisher</th><th>Purchase year</th><th>Age</th><th>Condition</th><th>Actions</th></tr></thead><tbody>${bookRows || `<tr><td class="table-empty" colspan="8">${escapeHtml(emptyMessage)}${!books.length && canManageLibrary() ? `<div class="empty-actions"><button class="button button-primary" data-action="add-book">Catalog first book</button></div>` : ""}</td></tr>`}</tbody></table></div>` : `<div class="book-grid">${bookCards || `<div class="panel-empty"><strong>${escapeHtml(emptyMessage)}</strong>${!books.length && canManageLibrary() ? `<button class="button button-primary" data-action="add-book">Catalog first book</button>` : ""}</div>`}</div>`}</section>
       <p class="inline-hint">Aging indicator: 5+ years warrants review; 8+ years warrants replacement assessment. Thresholds are operational prompts, not automatic disposal decisions.</p>`;
     byId("inventory-search").addEventListener("input", async (event) => {
       state.inventoryQuery = event.target.value;
@@ -2212,6 +2215,27 @@
     });
   }
 
+
+  async function issueLibraryCopy(bookId) {
+    if (!canManageLibrary()) return;
+    const [book, students, loans] = await Promise.all([getStoredRecord("books", bookId), getAll("students"), getAll("loans")]);
+    if (!book || book.condition !== "Available" || currentLoanFor(book.id, loans)) {
+      notify("That library copy is not available to issue.", true); return;
+    }
+    const eligible = students.filter((student) => student.active !== false && student.academic_status !== "departed" && student.academic_status !== "graduated")
+      .sort((a, b) => String(a.admission_number).localeCompare(String(b.admission_number), undefined, { numeric: true }));
+    if (!eligible.length) { notify("Register students before issuing library books.", true); return; }
+    const fields = [
+      formField("Student", "student_id", { full: true, choices: eligible.map((student) => [student.id, student.admission_number + " · " + student.full_name + " · " + (student.current_class || student.grade)]) }),
+      formField("Weekly return date", "due_date", { type: "date", value: demoDateOffset(7), full: true, hint: "Library loans are due on this date. Late returns accrue KSh 5 per calendar day." }),
+    ].join("");
+    showForm("Issue " + book.accession_code, fields, "Issue to student", async (form) => {
+      const student = eligible.find((item) => item.id === form.get("student_id"));
+      if (!student) throw new Error("Choose a student from the active register.");
+      await issueOrReturn(student.admission_number, book.accession_code, "issue", String(form.get("due_date") || ""));
+    }, "LIBRARY CIRCULATION");
+  }
+
   async function issueOrReturn(studentInput, bookInput, mode, requestedDueDate = "") {
     try {
       const [students, books, loans] = await Promise.all([getAll("students"), getAll("books"), getAll("loans")]);
@@ -3094,6 +3118,7 @@
       await renderCirculation();
       byId("circulation-form")?.elements.student.focus();
     }
+    if (target.dataset.issueBook && canManageLibrary()) await issueLibraryCopy(target.dataset.issueBook);
     if (target.dataset.editBook && canManageLibrary()) {
       const book = (await getAll("books")).find((item) => item.id === target.dataset.editBook);
       if (book) await addBook(book);
