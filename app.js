@@ -1666,15 +1666,25 @@
 
   async function decideConnectedApproval(id, decision) {
     if (!["approved", "rejected"].includes(decision)) return;
-    const reason = window.prompt(`${decision === "approved" ? "Approval" : "Rejection"} reason (required):`, "Reviewed by the school approver");
-    if (reason === null) return;
-    if (reason.trim().length < 3) { notify("Enter a reason of at least 3 characters.", true); return; }
-    const { error } = await state.supabase.rpc("decide_approval_request", {
-      p_request_id: id, p_decision: decision, p_decision_note: reason.trim(),
+    const decisionLabel = decision === "approved" ? "Approve request" : "Reject request";
+    const reasonLabel = decision === "approved" ? "Approval reason" : "Rejection reason";
+    const fields = formField(reasonLabel, "decision_note", {
+      textarea: true, full: true, maxLength: 500,
+      placeholder: decision === "rejected"
+        ? "Explain why this request cannot be approved..."
+        : "Record why this request is approved...",
+      hint: "This explanation is saved in the approval history.",
     });
-    if (error) throw error;
-    notify(`Request ${decision}.`);
-    await refresh();
+    showForm(decisionLabel, fields, decision === "rejected" ? "Confirm rejection" : "Confirm approval", async (form) => {
+      const reason = String(form.get("decision_note") || "").trim();
+      if (reason.length < 3) throw new Error("Please enter at least 3 characters explaining this decision.");
+      const { error } = await state.supabase.rpc("decide_approval_request", {
+        p_request_id: id, p_decision: decision, p_decision_note: reason,
+      });
+      if (error) throw error;
+      notify(decision === "rejected" ? "Request rejected. The reason has been recorded." : "Request approved. The reason has been recorded.");
+      await refresh();
+    }, "PRINCIPAL APPROVAL");
   }
 
   async function addDemoAssignment() {
@@ -1737,17 +1747,27 @@
     if (state.syncConfig || !["approved", "rejected"].includes(decision)) return;
     const request = await getStoredRecord("approval_requests", id);
     if (!request || request.status !== "pending") return;
-    const note = window.prompt(`${decision === "approved" ? "Approval" : "Rejection"} reason (required):`, "Reviewed in the fictional demo");
-    if (note === null) return;
-    if (!note.trim()) { notify("Enter a reason for the decision.", true); return; }
-    const now = new Date().toISOString();
-    await writeRecord("approval_requests", { ...request, status: decision, decided_by: null, decided_by_label: "Demo Principal", decided_at: now, decision_note: note.trim(), updated_at: now });
-    await writeRecord("audit_events", {
-      id: crypto.randomUUID(), action: decision, table_name: "approval_requests", record_id: request.id,
-      actor_user_id: null, actor_label: "Demo Principal", occurred_at: now,
-      after_data: { status: decision, reason: note.trim() }, demo_record: true,
+    const fields = formField(decision === "rejected" ? "Rejection reason" : "Approval reason", "decision_note", {
+      textarea: true, full: true, maxLength: 500,
+      placeholder: decision === "rejected"
+        ? "Explain why this request cannot be approved..."
+        : "Record why this request is approved...",
+      hint: "This explanation is saved in the demonstration approval history.",
     });
-    await refresh();
+    showForm(decision === "rejected" ? "Reject request" : "Approve request", fields,
+      decision === "rejected" ? "Confirm rejection" : "Confirm approval", async (form) => {
+        const note = String(form.get("decision_note") || "").trim();
+        if (note.length < 3) throw new Error("Please enter at least 3 characters explaining this decision.");
+        const now = new Date().toISOString();
+        await writeRecord("approval_requests", { ...request, status: decision, decided_by: null, decided_by_label: "Demo Principal", decided_at: now, decision_note: note, updated_at: now });
+        await writeRecord("audit_events", {
+          id: crypto.randomUUID(), action: decision, table_name: "approval_requests", record_id: request.id,
+          actor_user_id: null, actor_label: "Demo Principal", occurred_at: now,
+          after_data: { status: decision, reason: note }, demo_record: true,
+        });
+        notify(decision === "rejected" ? "Request rejected. The reason has been recorded." : "Request approved. The reason has been recorded.");
+        await refresh();
+      }, "DEMO APPROVAL");
   }
 
   async function renderReports() {
