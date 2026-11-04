@@ -2568,10 +2568,8 @@
   function showSignInTransition() {
     const overlay = byId("signin-transition");
     const quote = byId("signin-quote");
-    const palettes = ["violet", "ocean", "forest", "sunset"];
     quote.textContent = SIGN_IN_QUOTES[Math.floor(Math.random() * SIGN_IN_QUOTES.length)];
-    overlay.classList.remove("is-leaving", "palette-violet", "palette-ocean", "palette-forest", "palette-sunset");
-    overlay.classList.add(`palette-${palettes[Math.floor(Math.random() * palettes.length)]}`);
+    overlay.classList.remove("is-leaving");
     if (!overlay.open) overlay.showModal();
   }
 
