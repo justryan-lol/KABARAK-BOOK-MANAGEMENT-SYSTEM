@@ -50,6 +50,8 @@
     const field = event.target;
     if (!(field instanceof HTMLElement)) return;
     field.classList.add("kbms-invalid");
+    // The shared dialog performs its own single, field-specific validation message.
+    if (field.form?.noValidate) return;
     const now = Date.now();
     if (now - lastValidationNoticeAt > 700) {
       lastValidationNoticeAt = now;
