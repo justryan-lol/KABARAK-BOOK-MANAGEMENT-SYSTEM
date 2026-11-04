@@ -701,3 +701,12 @@ body.auth-pending .app-shell { display: none !important; }
   .public-description { max-width: 48rem; font-size: 11px; }
   .public-access-note { font-size: 9px; }
 }
+
+
+/* Fail-safe: never allow the staff workspace to overlap the public welcome screen. */
+#public-home:not([hidden]) ~ #app-shell {
+  display: none !important;
+}
+#app-shell[hidden] {
+  display: none !important;
+}
