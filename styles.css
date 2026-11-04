@@ -865,3 +865,8 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { width: 
   .global-search-results { right: auto; }
   #class-roster-search { min-width: 0; }
 }
+
+.public-demo-button { min-height: 46px; gap: 10px; border-color: #d8c7cd; background: rgb(255 254 250 / 88%); color: var(--wine); text-decoration: none; }
+.public-demo-button:hover { border-color: var(--wine-soft); background: #fffefa; }
+.public-hero-actions { flex-wrap: wrap; }
+@media (max-width: 420px) { .public-demo-button { width: 100%; justify-content: center; } }
