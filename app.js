@@ -2356,10 +2356,11 @@
       }
       state.staffRole = data.role;
       state.offlineAuthorization = null;
-      setPublicGate(false);
       subscribeToChanges();
       await synchronizeFromServer();
       if (canManageRecords()) await flushOutbox();
+      // Reveal the workspace only after the staff role is verified and server records are synchronized.
+      setPublicGate(false);
       await refresh();
       if (session.user?.user_metadata?.must_change_password && !byId("change-password-dialog").open) {
         byId("change-password-dialog").showModal();
