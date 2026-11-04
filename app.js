@@ -583,15 +583,25 @@
     byId("dialog-fields").innerHTML = fields;
     byId("dialog-submit").textContent = submitLabel;
     const form = byId("dialog-form");
+    // Use KBMS validation feedback instead of the browser's native validation bubble.
+    form.noValidate = true;
+    form.querySelectorAll(".kbms-invalid").forEach((field) => field.classList.remove("kbms-invalid"));
     form.onsubmit = async (event) => {
-      // Cancel/close is never a save attempt: bypass required-field checks and
-      // close immediately without invoking the record callback.
+      // Cancel/close is never a save attempt: bypass validation and close immediately.
       if (event.submitter?.value === "cancel") {
         event.preventDefault();
         dialog.close("cancel");
         return;
       }
       event.preventDefault();
+      const invalidField = [...form.elements].find((field) => field.willValidate && !field.checkValidity());
+      if (invalidField) {
+        invalidField.classList.add("kbms-invalid");
+        const fieldLabel = invalidField.closest(".field")?.querySelector(":scope > span")?.textContent?.trim();
+        notify(fieldLabel ? `Please complete the “${fieldLabel}” field.` : "Please check the required fields and try again.", true);
+        invalidField.focus();
+        return;
+      }
       const button = byId("dialog-submit");
       button.disabled = true;
       try {
