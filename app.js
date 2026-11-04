@@ -2019,7 +2019,7 @@
     showForm("Register student", fields, "Register student", async (form) => {
       const admission = String(form.get("admission_number")).trim();
       const name = String(form.get("full_name")).trim();
-      const classNumber = classRecord ? Number(String(classRecord.grade_label || "").match(/(\\d+)$/)?.[1] || 0) : Number(form.get("class_number"));
+      const classNumber = classRecord ? Number(String(classRecord.grade_label || "").match(/(\d+)$/)?.[1] || 0) : Number(form.get("class_number"));
       const students = await getAll("students");
       if (students.some((student) => student.admission_number.toLowerCase() === admission.toLowerCase())) throw new Error("That admission number is already registered.");
       if (!admission || admission.length > 64 || name.length < 2 || name.length > 160 || (!classRecord && (!Number.isInteger(classNumber) || classNumber < 1 || classNumber > 999))) throw new Error("Enter a valid admission number and student name. A class number is required when registering outside a class roster.");
