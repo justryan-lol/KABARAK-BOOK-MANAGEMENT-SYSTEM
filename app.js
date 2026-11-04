@@ -43,6 +43,33 @@
     window.setTimeout(() => toast.remove(), 4200);
   }
 
+  // Replace browser-native validation bubbles with consistent KBMS feedback.
+  let lastValidationNoticeAt = 0;
+  document.addEventListener("invalid", (event) => {
+    event.preventDefault();
+    const field = event.target;
+    if (!(field instanceof HTMLElement)) return;
+    field.classList.add("kbms-invalid");
+    const now = Date.now();
+    if (now - lastValidationNoticeAt > 700) {
+      lastValidationNoticeAt = now;
+      const label = field.closest(".field")?.querySelector(":scope > span")?.textContent?.trim();
+      notify(label ? `Please complete or correct “${label}”.` : "Please complete the highlighted required field.", true);
+    }
+  }, true);
+  document.addEventListener("input", (event) => {
+    const field = event.target;
+    if (field instanceof HTMLElement && field.classList.contains("kbms-invalid") && field.checkValidity()) {
+      field.classList.remove("kbms-invalid");
+    }
+  }, true);
+  document.addEventListener("change", (event) => {
+    const field = event.target;
+    if (field instanceof HTMLElement && field.classList.contains("kbms-invalid") && field.checkValidity()) {
+      field.classList.remove("kbms-invalid");
+    }
+  }, true);
+
   function setSyncStatus(kind, label) {
     const indicator = byId("sync-indicator");
     indicator.className = `sync-indicator${kind === "pending" ? " pending" : kind === "error" ? " error" : ""}`;
@@ -2731,7 +2758,22 @@
     try {
       state.db = await openDatabase();
       if ("serviceWorker" in navigator && window.isSecureContext) {
-        navigator.serviceWorker.register("./sw.js").catch((error) => notify(`Offline cache could not be enabled: ${error.message}`, true));
+        const hadController = Boolean(navigator.serviceWorker.controller);
+        let reloadingForUpdate = false;
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          if (!hadController || reloadingForUpdate) return;
+          reloadingForUpdate = true;
+          window.location.reload();
+        });
+        navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).then((registration) => {
+          // Check for a newly deployed worker while the app is open.
+          const checkForDeployment = () => {
+            if (document.visibilityState === "visible") registration.update().catch(() => {});
+          };
+          window.setInterval(checkForDeployment, 60_000);
+          document.addEventListener("visibilitychange", checkForDeployment);
+          checkForDeployment();
+        }).catch((error) => notify(`Offline cache could not be enabled: ${error.message}`, true));
       }
       const initialPage = location.hash.slice(1);
       navigate(PAGE_NAMES[initialPage] ? initialPage : "dashboard");
