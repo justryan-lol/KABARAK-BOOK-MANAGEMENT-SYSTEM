@@ -1086,3 +1086,14 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { width: 
 @media (prefers-reduced-motion: reduce) {
   .sidebar, .mobile-nav-toggle span, .mobile-nav-backdrop { transition: none !important; animation: none !important; }
 }
+
+/* Mobile drawer must restore full labels even when the desktop rail preference is collapsed. */
+@media (max-width: 700px) {
+  .sidebar .sidebar-brand-row { justify-content: space-between; }
+  .sidebar .sidebar-brand-row .brand { justify-content: flex-start; padding: 0 2px 12px; }
+  .sidebar .sidebar-toggle { position: static; top: auto; right: auto; width: 38px; height: 38px; }
+  .sidebar .sidebar-bottom .legal-link { display: flex; }
+  .sidebar .user-chip > span:nth-child(2) { display: grid; }
+  .sidebar .user-chip .text-button { display: inline-flex; }
+  .sidebar .user-chip { justify-content: flex-start; }
+}
