@@ -712,24 +712,24 @@ body.auth-pending .app-shell { display: none !important; }
 }
 
 
-/* Focused sign-in transition: a brief, accessible full-screen sync moment. */
+/* KBMS sign-in transition: restrained school palette, quiet motion, no generic gradients. */
 .signin-transition {
   width: 100%;
   max-width: none;
   height: 100%;
   max-height: none;
   margin: 0;
-  padding: 28px;
+  padding: 24px;
   border: 0;
   overflow: hidden;
-  color: #fff;
+  color: var(--ink);
   background: transparent;
   opacity: 1;
-  transition: opacity .22s ease, transform .22s ease;
+  transition: opacity .24s ease, transform .24s ease;
 }
 .signin-transition::backdrop {
-  background: rgba(13, 13, 27, .72);
-  backdrop-filter: blur(12px);
+  background: rgb(247 245 240 / 94%);
+  backdrop-filter: blur(5px);
 }
 .signin-transition[open] {
   display: grid;
@@ -737,82 +737,70 @@ body.auth-pending .app-shell { display: none !important; }
 }
 .signin-transition.is-leaving {
   opacity: 0;
-  transform: scale(1.025);
+  transform: translateY(5px);
 }
 .signin-transition-content {
   position: relative;
   display: flex;
-  width: min(540px, 100%);
-  min-height: 330px;
+  width: min(440px, 100%);
+  min-height: 290px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 13px;
-  padding: clamp(28px, 6vw, 58px);
-  overflow: hidden;
-  border: 1px solid rgba(255,255,255,.22);
-  border-radius: 26px;
+  gap: 12px;
+  padding: clamp(28px, 5vw, 48px);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--wine);
+  border-radius: 12px;
+  background: var(--surface);
   text-align: center;
-  box-shadow: 0 30px 100px rgba(0,0,0,.24);
-  isolation: isolate;
-}
-.signin-transition-content::before {
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  content: "";
-  background: linear-gradient(135deg, #5b4bdb 0%, #302c75 52%, #151c3c 100%);
-}
-.signin-transition.palette-ocean .signin-transition-content::before {
-  background: linear-gradient(135deg, #087e8b 0%, #155e75 48%, #172554 100%);
-}
-.signin-transition.palette-forest .signin-transition-content::before {
-  background: linear-gradient(135deg, #16856b 0%, #14532d 50%, #102a43 100%);
-}
-.signin-transition.palette-sunset .signin-transition-content::before {
-  background: linear-gradient(135deg, #e06b55 0%, #9d426b 48%, #39275f 100%);
+  box-shadow: 0 18px 55px rgb(52 25 37 / 9%);
 }
 .signin-transition .eyebrow {
-  margin: 7px 0 0;
-  color: rgba(255,255,255,.76);
+  margin: 8px 0 0;
+  color: var(--wine-soft);
   font-size: 9px;
-  letter-spacing: .2em;
+  font-weight: 700;
+  letter-spacing: .19em;
 }
 .signin-transition h2 {
   margin: 0;
-  color: white;
-  font: 600 clamp(25px, 5vw, 34px)/1.15 Georgia, serif;
+  color: var(--wine-deep);
+  font: 600 clamp(24px, 4vw, 31px)/1.18 Georgia, serif;
 }
 .signin-transition-status {
   margin: 0;
-  color: rgba(255,255,255,.78);
-  font-size: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
 }
 .signin-quote {
-  max-width: 370px;
-  margin: 17px 0 0;
-  color: #fff;
-  font: italic 17px/1.55 Georgia, serif;
+  max-width: 340px;
+  margin: 13px 0 0;
+  color: var(--wine-soft);
+  font: italic 16px/1.55 Georgia, serif;
 }
 .signin-transition-foot {
-  margin-top: 15px;
-  color: rgba(255,255,255,.62);
+  margin-top: 12px;
+  color: #93878b;
   font-size: 8px;
-  letter-spacing: .18em;
+  font-weight: 700;
+  letter-spacing: .17em;
 }
 .signin-spinner {
-  width: 27px;
-  height: 27px;
-  border: 2px solid rgba(255,255,255,.28);
-  border-top-color: #fff;
+  width: 25px;
+  height: 25px;
+  border: 2px solid #eadfe3;
+  border-top-color: var(--wine);
+  border-right-color: var(--gold);
   border-radius: 50%;
-  animation: signin-spin .75s linear infinite;
+  animation: signin-spin .85s linear infinite;
 }
 @keyframes signin-spin { to { transform: rotate(360deg); } }
 @media (max-width: 520px) {
   .signin-transition { padding: 18px; }
-  .signin-transition-content { min-height: 300px; border-radius: 20px; }
-  .signin-quote { font-size: 15px; }
+  .signin-transition-content { min-height: 270px; border-radius: 10px; }
+  .signin-quote { font-size: 14px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .signin-spinner { animation: none; }
