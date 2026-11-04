@@ -40,7 +40,10 @@
     toast.className = `toast${isError ? " error" : ""}`;
     toast.textContent = message;
     byId("toast-region").append(toast);
-    window.setTimeout(() => toast.remove(), 4200);
+    window.setTimeout(() => {
+      toast.classList.add("is-leaving");
+      window.setTimeout(() => toast.remove(), 200);
+    }, 4000);
   }
 
   // Replace browser-native validation bubbles with consistent KBMS feedback.
