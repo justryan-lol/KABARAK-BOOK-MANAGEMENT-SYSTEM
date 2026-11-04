@@ -1076,6 +1076,45 @@
     });
   }
 
+
+  async function repairDemoClassDirectory() {
+    if (!state.demoMode || state.syncConfig) return;
+    if (await getStoredRecord("system_settings", "demo-class-directory-v4")) return;
+    const [classes, years, students] = await Promise.all([
+      getAll("school_classes"), getAll("academic_years"), getAll("students"),
+    ]);
+    const names = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa", "Lambda", "Mu", "Nu", "Xi", "Omicron", "Pi"];
+    const year = years.find((item) => item.is_current) || years[0];
+    if (!year) throw new Error("The demo academic year is missing.");
+    for (let index = 0; index < names.length; index += 1) {
+      const label = "Grade 10 " + names[index];
+      const existing = classes.find((item) => (item.class_label || item.display_name) === label && item.academic_year_id === year.id);
+      if (!existing) {
+        await writeRecord("school_classes", {
+          id: crypto.randomUUID(), academic_year_id: year.id,
+          class_code: "G10-" + names[index].toUpperCase(), display_name: label,
+          grade: "Grade 10", grade_label: "Grade 10", class_label: label,
+          school_section: index % 2 === 0 ? "G" : "B", active: true,
+          archived_at: null, created_at: new Date().toISOString(),
+        });
+      }
+    }
+    const updatedStudents = students.map((student) => {
+      const index = Math.max(0, Number(String(student.admission_number).replace(/^DEMO-/, "")) - 1001);
+      const classNumber = (Math.floor(index / 4) % 16) + 1;
+      return normalizeStudentRecord({
+        ...student, grade: "Grade 10", class_number: classNumber,
+        current_class: "Grade 10 " + names[classNumber - 1],
+        school_section: classNumber % 2 === 1 ? "G" : "B",
+      });
+    });
+    if (updatedStudents.length) await replaceAll("students", updatedStudents);
+    await writeRecord("system_settings", {
+      id: "demo-class-directory-v4", value: true, updated_at: new Date().toISOString(),
+      description: "Ensures all sixteen Grade 10 classes and student class assignments exist",
+    });
+  }
+
   async function renderDashboard() {
     const [books, students, loans, textbookCopies, textbookAllocations] = await Promise.all([getAll("books"), getAll("students"), getAll("loans"), getAll("textbook_copies"), getAll("textbook_allocations")]);
     const circulating = loans.filter((loan) => !loan.returned_at);
@@ -3301,6 +3340,7 @@
         const [students, books, copies, allocations] = await Promise.all([getAll("students"), getAll("books"), getAll("textbook_copies"), getAll("textbook_allocations")]);
         if (!students.length && !books.length && !copies.length && !allocations.length) await loadFictionalDemoData();
         await upgradeDemoScenario();
+        await repairDemoClassDirectory();
       }
       const initialPage = location.hash.slice(1);
       navigate(PAGE_NAMES[initialPage] ? initialPage : "dashboard");
