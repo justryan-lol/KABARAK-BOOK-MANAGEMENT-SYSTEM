@@ -394,3 +394,103 @@ table tbody tr:hover { background: #fcf7f8; }
   .content-area, .dialog[open], .toast { animation: none !important; }
   *, *::before, *::after { transition-duration: .01ms !important; }
 }
+
+
+/* KBMS motion system — consistent, restrained transitions across every workspace. */
+:root {
+  --kbms-motion-instant: 120ms;
+  --kbms-motion-fast: 180ms;
+  --kbms-motion-base: 260ms;
+  --kbms-motion-slow: 380ms;
+  --kbms-motion-ease: cubic-bezier(.2,.72,.22,1);
+  --kbms-motion-spring: cubic-bezier(.18,.82,.24,1.12);
+}
+.page-enter { animation: kbms-page-enter 320ms var(--kbms-motion-ease) both; }
+.nav-item[aria-current="page"] { position: relative; }
+.nav-item[aria-current="page"]::before {
+  position: absolute; inset: 8px auto 8px 0; width: 3px; border-radius: 0 4px 4px 0;
+  background: currentColor; content: "";
+}
+.button, .icon-button, .text-button, .segment-button, .filter-select, .demo-steps button {
+  -webkit-tap-highlight-color: transparent;
+  transform-origin: center;
+  transition:
+    color var(--kbms-motion-fast) ease,
+    background-color var(--kbms-motion-fast) ease,
+    border-color var(--kbms-motion-fast) ease,
+    box-shadow var(--kbms-motion-base) var(--kbms-motion-ease),
+    transform var(--kbms-motion-fast) var(--kbms-motion-ease),
+    opacity var(--kbms-motion-fast) ease;
+}
+.button:hover:not(:disabled), .icon-button:hover:not(:disabled), .demo-steps button:hover {
+  transform: translateY(-1px);
+}
+.button:active:not(:disabled), .icon-button:active:not(:disabled), .segment-button:active {
+  transform: translateY(1px) scale(.975);
+}
+.button:disabled, .icon-button:disabled {
+  cursor: not-allowed; opacity: .58; transform: none; box-shadow: none;
+}
+.nav-item { position: relative; overflow: hidden; }
+.nav-item::after {
+  position: absolute; inset: 0; background: currentColor; opacity: 0;
+  content: ""; pointer-events: none; transition: opacity var(--kbms-motion-fast) ease;
+}
+.nav-item:hover::after { opacity: .045; }
+.panel, .stat-card, .book-card, .house-card, .quick-panel {
+  transition: border-color var(--kbms-motion-base) ease,
+    box-shadow var(--kbms-motion-base) var(--kbms-motion-ease),
+    transform var(--kbms-motion-base) var(--kbms-motion-ease);
+}
+.stat-card:hover, .book-card:hover, .house-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgb(52 25 37 / 8%);
+}
+.panel-header, .dialog-head, .page-heading { transition: color var(--kbms-motion-fast) ease; }
+.book-cover, .shop-thumb, .crest, .auth-crest {
+  transition: transform var(--kbms-motion-slow) var(--kbms-motion-ease), filter var(--kbms-motion-base) ease;
+}
+.book-card:hover .book-cover { transform: scale(1.025); }
+.field input, .field select, .field textarea, .search-input, .filter-select {
+  transition: border-color var(--kbms-motion-fast) ease, background-color var(--kbms-motion-fast) ease,
+    box-shadow var(--kbms-motion-fast) ease;
+}
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible, .search-input:focus-visible {
+  outline: none; box-shadow: 0 0 0 3px rgb(99 8 46 / 12%);
+}
+.dialog[open] { animation: kbms-dialog-enter var(--kbms-motion-base) var(--kbms-motion-ease) both; }
+.dialog[open]::backdrop { animation: kbms-backdrop-enter var(--kbms-motion-fast) ease both; }
+.toast { animation: kbms-toast-enter var(--kbms-motion-base) var(--kbms-motion-ease) both; }
+.toast.is-leaving { animation: kbms-toast-exit var(--kbms-motion-fast) ease both; }
+.table-wrap { overscroll-behavior-x: contain; }
+table tbody tr { transition: background-color var(--kbms-motion-fast) ease; }
+.status-tag { transition: color var(--kbms-motion-fast) ease, background-color var(--kbms-motion-fast) ease, border-color var(--kbms-motion-fast) ease; }
+.empty-mark { animation: kbms-empty-float 3.6s ease-in-out infinite; }
+.status-dot { transition: background-color var(--kbms-motion-fast) ease, box-shadow var(--kbms-motion-fast) ease; }
+.sync-indicator.pending .status-dot { animation: kbms-status-pulse 1.35s ease-in-out infinite; }
+@keyframes kbms-dialog-enter {
+  from { opacity: 0; transform: translateY(12px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes kbms-toast-exit {
+  to { opacity: 0; transform: translateX(12px); }
+}
+@keyframes kbms-empty-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes kbms-status-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(163 59 67 / 0%); }
+  50% { box-shadow: 0 0 0 5px rgb(163 59 67 / 12%); }
+}
+@media (max-width: 700px) {
+  .nav-item:hover { transform: none; }
+  .stat-card:hover, .book-card:hover, .house-card:hover { transform: none; }
+  .page-enter { animation-duration: 240ms; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter, .empty-mark, .sync-indicator.pending .status-dot { animation: none !important; }
+  .button:hover:not(:disabled), .icon-button:hover:not(:disabled),
+  .button:active:not(:disabled), .icon-button:active:not(:disabled),
+  .stat-card:hover, .book-card:hover, .house-card:hover { transform: none !important; }
+}
