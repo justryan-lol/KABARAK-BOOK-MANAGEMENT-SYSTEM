@@ -870,3 +870,28 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { width: 
 .public-demo-button:hover { border-color: var(--wine-soft); background: #fffefa; }
 .public-hero-actions { flex-wrap: wrap; }
 @media (max-width: 420px) { .public-demo-button { width: 100%; justify-content: center; } }
+
+/* KBMS navigation: smooth, quiet width transitions with a neutral menu glyph. */
+.sidebar, .main-area { transition: width .28s cubic-bezier(.2,.75,.25,1), margin-left .28s cubic-bezier(.2,.75,.25,1), padding .28s ease; }
+.sidebar-toggle { width: 32px; height: 32px; border-radius: 8px; }
+.sidebar-toggle-icon, .sidebar-toggle-icon::before, .sidebar-toggle-icon::after { display:block; width:13px; height:1.5px; border-radius:2px; background:#f6e8c2; transition:transform .2s ease, opacity .2s ease; }
+.sidebar-toggle-icon { position:relative; }
+.sidebar-toggle-icon::before, .sidebar-toggle-icon::after { position:absolute; left:0; content:""; }
+.sidebar-toggle-icon::before { top:-4px; }
+.sidebar-toggle-icon::after { top:4px; }
+.sidebar-toggle:hover .sidebar-toggle-icon::before { transform:translateY(-1px); }
+.sidebar-toggle:hover .sidebar-toggle-icon::after { transform:translateY(1px); }
+.sidebar-collapsed .sidebar-toggle { position:absolute; top:18px; right:-7px; z-index:4; width:30px; height:30px; background:var(--wine); box-shadow:0 2px 8px rgb(0 0 0 / 18%); }
+.sidebar-collapsed .sidebar-toggle-icon { transform:rotate(90deg); }
+@media (max-width: 1050px) {
+  .sidebar { width:78px; padding-right:10px; padding-left:10px; }
+  .main-area { margin-left:78px; }
+  .sidebar-brand-row { justify-content:center; }
+  .sidebar-brand-row .brand { justify-content:center; padding:3px 0 16px; }
+  .sidebar .brand-copy, .sidebar .nav-label, .sidebar .workspace-label, .sidebar .sidebar-bottom .legal-link, .sidebar .user-chip > span:nth-child(2), .sidebar .user-chip .text-button { display:none; }
+  .sidebar .sidebar-toggle { position:absolute; top:18px; right:-7px; z-index:4; }
+  .sidebar .nav-item { justify-content:center; gap:0; padding-right:0; padding-left:0; font-size:0; }
+  .sidebar .nav-icon { width:auto; font-size:18px; }
+  .sidebar .user-chip { justify-content:center; }
+}
+@media (prefers-reduced-motion: reduce) { .sidebar, .main-area, .sidebar-toggle-icon, .sidebar-toggle-icon::before, .sidebar-toggle-icon::after { transition:none !important; } }
