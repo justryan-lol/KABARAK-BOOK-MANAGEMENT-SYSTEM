@@ -94,3 +94,11 @@ The connected database requires the migration `supabase/migrations/202611010001_
 ## Cloudflare Pages teacher-demo deployment
 
 See `CLOUDFLARE-DEMO-DEPLOYMENT.md`. The project includes `wrangler.toml`, `_headers` and `scripts/build-cloudflare.sh`. Cloudflare Pages serves the front-end; a separate Supabase demo project supplies shared records, authentication and server-side authorization. The build script requires `SUPABASE_URL` and `SUPABASE_ANON_KEY` for that demo project and intentionally copies only runtime assets into `dist/`. It does not deploy the site or configure the Supabase project automatically.
+
+
+## Demo scenario update (v3)
+
+- Sixteen individual Grade 10 classes, each with a directly viewable class register and student membership.
+- Library and Bookstore copy-level issue/return actions; Library circulation applies KSh 5 per calendar day after the due date, while textbook allocations retain the academic-year return deadline without a late fee.
+- The demo includes additional active library loans and textbook allocations, returned transactions, a previous academic year with archived classes and roster snapshots, and a combined read-only lending history in Archives.
+- The demo migration runs once per demo browser database and does not connect to or modify the live school Supabase workspace.
