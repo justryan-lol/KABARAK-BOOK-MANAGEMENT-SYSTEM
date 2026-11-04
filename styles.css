@@ -632,3 +632,6 @@ body.auth-pending .app-shell { display: none !important; }
   .heading-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .heading-actions .button { min-width: 0; width: 100%; }
 }
+
+
+#app-shell[hidden] { display: none !important; }
