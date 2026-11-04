@@ -10,8 +10,37 @@
     <link rel="stylesheet" href="./styles.css">
     <title>Kabarak Book Management</title>
   </head>
-  <body>
-    <div class="app-shell">
+  <body class="auth-pending">
+    <main id="public-home" class="public-home" aria-labelledby="public-home-title">
+      <div class="public-home-glow public-home-glow-one" aria-hidden="true"></div>
+      <div class="public-home-glow public-home-glow-two" aria-hidden="true"></div>
+      <header class="public-home-header">
+        <a class="public-brand" href="./" aria-label="KBMS home">
+          <img src="./mhsk-crest.png" alt="" class="public-brand-crest">
+          <span><strong>KBMS</strong><small>MOI HIGH SCHOOL · KABARAK</small></span>
+        </a>
+        <span class="public-secure-label"><span class="public-secure-dot"></span> STAFF PORTAL</span>
+      </header>
+      <section class="public-hero">
+        <div class="public-hero-copy">
+          <span class="public-kicker"><span></span> SCHOOL LIBRARY &amp; BOOKSTORE</span>
+          <h1 id="public-home-title">Kabarak Book<br><em>Management System.</em></h1>
+          <p class="public-description">A unified workspace for managing library circulation, textbook lending, student records and academic book accountability — built for authorized school staff.</p>
+          <div class="public-hero-actions">
+            <button class="button button-primary public-login-button" type="button" data-action="public-enter"><span>Staff sign in</span><span aria-hidden="true">→</span></button>
+            <span class="public-access-note">Secure access · School-issued accounts only</span>
+          </div>
+        </div>
+        <div class="public-hero-art" aria-hidden="true">
+          <div class="public-orbit public-orbit-one"></div><div class="public-orbit public-orbit-two"></div>
+          <div class="public-crest-card"><img src="./mhsk-crest.png" alt=""></div>
+          <div class="public-float-card public-float-top"><span class="public-float-icon">▤</span><span><strong>Library</strong><small>Circulation &amp; returns</small></span></div>
+          <div class="public-float-card public-float-bottom"><span class="public-float-icon">▣</span><span><strong>Bookstore</strong><small>Textbook accountability</small></span></div>
+        </div>
+      </section>
+      <footer class="public-home-footer"><span>MOI HIGH SCHOOL – KABARAK</span><span>ON EARTH WE RISE <i>·</i> NAKURU COUNTY, KENYA</span></footer>
+    </main>
+    <div class="app-shell" id="app-shell" hidden>
       <aside class="sidebar" aria-label="Main navigation">
         <a class="brand" href="#dashboard" aria-label="Kabarak Book Management overview">
           <img class="crest" src="./mhsk-crest.png" alt="Moi High School - Kabarak crest">

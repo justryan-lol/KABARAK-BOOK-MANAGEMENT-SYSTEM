@@ -16,7 +16,7 @@
   const state = {
     page: "dashboard", db: null, supabase: null, session: null, staffRole: null, offlineAuthorization: null, syncConfig: null, sessionTask: null, channel: null,
     inventoryQuery: "", studentQuery: "", bookstoreReturnQuery: "", inventoryFilter: "all", inventoryView: "table", studentFilter: "all", textbookQuery: "",
-    circulationMode: "issue", deferredInstall: null, syncing: false, remoteRefreshTimer: null,
+    circulationMode: "issue", deferredInstall: null, syncing: false, remoteRefreshTimer: null, pageTransitionRequested: false,
   };
   const byId = (id) => document.getElementById(id);
   const content = byId("app-content");
@@ -40,7 +40,10 @@
     toast.className = `toast${isError ? " error" : ""}`;
     toast.textContent = message;
     byId("toast-region").append(toast);
-    window.setTimeout(() => toast.remove(), 4200);
+    window.setTimeout(() => {
+      toast.classList.add("is-leaving");
+      window.setTimeout(() => toast.remove(), 200);
+    }, 4000);
   }
 
   // Replace browser-native validation bubbles with consistent KBMS feedback.
@@ -71,6 +74,18 @@
       field.classList.remove("kbms-invalid");
     }
   }, true);
+
+  function setPublicGate(showWelcome) {
+    const welcome = byId("public-home");
+    const shell = byId("app-shell");
+    if (!welcome || !shell) return;
+    welcome.hidden = !showWelcome;
+    shell.hidden = showWelcome;
+    document.body.classList.toggle("auth-pending", showWelcome);
+    const entry = welcome.querySelector('[data-action="public-enter"]');
+    if (entry) entry.querySelector("span").textContent = state.syncConfig ? "Staff sign in" : "Open demo workspace";
+    if (entry) entry.setAttribute("aria-label", state.syncConfig ? "Sign in to the KBMS staff portal" : "Open the local KBMS demo workspace");
+  }
 
   function setSyncStatus(kind, label) {
     const indicator = byId("sync-indicator");
@@ -697,10 +712,19 @@
     });
   }
 
+  function playPageEntrance() {
+    if (!state.pageTransitionRequested || !content) return;
+    state.pageTransitionRequested = false;
+    content.classList.remove("page-enter");
+    void content.offsetWidth;
+    content.classList.add("page-enter");
+  }
+
   async function refresh() {
     if (state.syncConfig && !state.session) {
       content.innerHTML = `<section class="panel panel-empty"><strong>Sign in to access school records</strong><p>School records are hidden on this device until an authorized staff account is verified. The local-only demo is separate from the shared school workspace.</p><button class="button button-primary" type="button" id="signin-required-button">Sign in</button></section>`;
       byId("signin-required-button")?.addEventListener("click", showAuthDialog);
+      playPageEntrance();
       return;
     }
     try {
@@ -717,6 +741,7 @@
     } catch (error) {
       content.innerHTML = `<section class="panel panel-empty"><strong>Workspace could not be loaded</strong><p>${escapeHtml(error.message || "Check local storage access and try again.")}</p></section>`;
     }
+    playPageEntrance();
   }
 
   function heading(eyebrow, title, description, action = "") {
@@ -2251,10 +2276,12 @@
     const config = window.BOOKSTORE_CONFIG;
     state.syncConfig = config?.url && config?.anonKey ? config : null;
     if (!config || !config.url || !config.anonKey) {
+      setPublicGate(false);
       setSyncStatus("offline", "Local demo only");
       return;
     }
     state.syncConfig = config;
+    setPublicGate(true);
     if (!/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(config.url)) {
       setSyncStatus("error", "Backend URL invalid");
       notify("Supabase URL must be an HTTPS origin.", true);
@@ -2281,6 +2308,7 @@
       } else {
         await clearSyncedWorkspace();
         setSyncStatus("offline", "Sign in to access records");
+        setPublicGate(true);
         await refresh();
       }
     } catch (error) {
@@ -2302,6 +2330,7 @@
       state.session = null;
       state.staffRole = null;
       state.offlineAuthorization = null;
+      setPublicGate(Boolean(state.syncConfig));
       state.sessionTask = null;
       setSyncStatus("pending", "Clearing signed-out device data");
       return (state.sessionTask = (async () => {
@@ -2330,6 +2359,8 @@
       subscribeToChanges();
       await synchronizeFromServer();
       if (canManageRecords()) await flushOutbox();
+      // Reveal the workspace only after the staff role is verified and server records are synchronized.
+      setPublicGate(false);
       await refresh();
       if (session.user?.user_metadata?.must_change_password && !byId("change-password-dialog").open) {
         byId("change-password-dialog").showModal();
@@ -2592,9 +2623,16 @@
 
   function navigate(page) {
     if (!PAGE_NAMES[page]) return;
+    if (state.page === page) return;
     state.page = page;
+    state.pageTransitionRequested = true;
     byId("page-name").textContent = PAGE_NAMES[page];
-    document.querySelectorAll(".nav-item[data-page]").forEach((button) => button.classList.toggle("active", button.dataset.page === page));
+    document.querySelectorAll(".nav-item[data-page]").forEach((button) => {
+      const active = button.dataset.page === page;
+      button.classList.toggle("active", active);
+      if (active) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
+    });
     history.replaceState(null, "", `#${page}`);
     refresh();
   }
@@ -2602,6 +2640,10 @@
   document.addEventListener("click", async (event) => {
     const target = event.target.closest("button");
     if (!target) return;
+    if (target.dataset.action === "public-enter") {
+      if (state.syncConfig) showAuthDialog();
+      else { setPublicGate(false); await refresh(); }
+    }
     if (target.dataset.page) navigate(target.dataset.page);
     if (target.dataset.pageLink) navigate(target.dataset.pageLink);
     if (target.dataset.legal) showLegal(target.dataset.legal);
@@ -2777,9 +2819,11 @@
           checkForDeployment();
         }).catch((error) => notify(`Offline cache could not be enabled: ${error.message}`, true));
       }
+      // Resolve backend configuration and authentication before rendering any workspace page.
+      // This prevents cached student or borrowing records from entering the public DOM on first load.
+      await connectSupabase();
       const initialPage = location.hash.slice(1);
       navigate(PAGE_NAMES[initialPage] ? initialPage : "dashboard");
-      await connectSupabase();
     } catch (error) {
       content.innerHTML = `<section class="panel panel-empty"><strong>Could not start the KBMS workspace</strong><p>${escapeHtml(error.message || "Check this browser's storage settings.")}</p></section>`;
       setSyncStatus("error", "Workspace unavailable");
