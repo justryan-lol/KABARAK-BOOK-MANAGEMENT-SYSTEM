@@ -6,7 +6,8 @@
     NB: "Nzoia Boys", NG: "Nzoia Girls", MB: "Mara Boys", MG: "Mara Girls",
   };
   const BOOK_CODE = /^[A-Z0-9][A-Z0-9._/-]{0,79}$/i;
-  const DB_NAME = "mhsk-bookstore";
+  const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
+  const DB_NAME = DEMO_MODE ? "mhsk-bookstore-demo" : "mhsk-bookstore";
   const DB_VERSION = 9;
   const PAGE_NAMES = {
     dashboard: "Overview", circulation: "Issue & return", inventory: "Library catalog",
@@ -15,7 +16,7 @@
   };
   const state = {
     page: "dashboard", db: null, supabase: null, session: null, staffRole: null, offlineAuthorization: null, syncConfig: null, sessionTask: null, channel: null,
-    selectedClassId: "", classRosterQuery: "", globalSearchTask: 0, sidebarCollapsed: false,
+    selectedClassId: "", classRosterQuery: "", globalSearchTask: 0, sidebarCollapsed: false, demoMode: DEMO_MODE,
     inventoryQuery: "", studentQuery: "", bookstoreReturnQuery: "", inventoryFilter: "all", inventoryView: "table", studentFilter: "all", textbookQuery: "",
     circulationMode: "issue", deferredInstall: null, syncing: false, remoteRefreshTimer: null, pageTransitionRequested: false,
   };
@@ -2371,6 +2372,13 @@
   }
 
   async function connectSupabase() {
+    if (state.demoMode) {
+      state.syncConfig = null;
+      state.supabase = null;
+      setPublicGate(false);
+      setSyncStatus("offline", "Fictional demo workspace");
+      return;
+    }
     const config = window.BOOKSTORE_CONFIG;
     state.syncConfig = config?.url && config?.anonKey ? config : null;
     if (!config || !config.url || !config.anonKey) {
