@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "mhsk-kbms-v19";
+const CACHE_NAME = "mhsk-kbms-v20";
 const APP_ASSETS = [
   "./",
   "./index.html",
@@ -43,6 +43,18 @@ self.addEventListener("fetch", (event) => {
       caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", copy));
       return response;
     }).catch(async () => (await caches.match("./index.html")) || Response.error()));
+    return;
+  }
+  const isAppCode = /\\.(?:html|css|js)$/.test(url.pathname);
+  if (isAppCode) {
+    // Always try the deployed version first; use the offline cache only if offline.
+    event.respondWith(fetch(request, { cache: "no-store" }).then((response) => {
+      if (response.ok) {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+      }
+      return response;
+    }).catch(async () => (await caches.match(request)) || Response.error()));
     return;
   }
   event.respondWith(caches.match(request).then((cached) => {
