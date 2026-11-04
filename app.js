@@ -16,7 +16,7 @@
   const state = {
     page: "dashboard", db: null, supabase: null, session: null, staffRole: null, offlineAuthorization: null, syncConfig: null, sessionTask: null, channel: null,
     inventoryQuery: "", studentQuery: "", bookstoreReturnQuery: "", inventoryFilter: "all", inventoryView: "table", studentFilter: "all", textbookQuery: "",
-    circulationMode: "issue", deferredInstall: null, syncing: false, remoteRefreshTimer: null,
+    circulationMode: "issue", deferredInstall: null, syncing: false, remoteRefreshTimer: null, pageTransitionRequested: false,
   };
   const byId = (id) => document.getElementById(id);
   const content = byId("app-content");
@@ -697,10 +697,19 @@
     });
   }
 
+  function playPageEntrance() {
+    if (!state.pageTransitionRequested || !content) return;
+    state.pageTransitionRequested = false;
+    content.classList.remove("page-enter");
+    void content.offsetWidth;
+    content.classList.add("page-enter");
+  }
+
   async function refresh() {
     if (state.syncConfig && !state.session) {
       content.innerHTML = `<section class="panel panel-empty"><strong>Sign in to access school records</strong><p>School records are hidden on this device until an authorized staff account is verified. The local-only demo is separate from the shared school workspace.</p><button class="button button-primary" type="button" id="signin-required-button">Sign in</button></section>`;
       byId("signin-required-button")?.addEventListener("click", showAuthDialog);
+      playPageEntrance();
       return;
     }
     try {
@@ -717,6 +726,7 @@
     } catch (error) {
       content.innerHTML = `<section class="panel panel-empty"><strong>Workspace could not be loaded</strong><p>${escapeHtml(error.message || "Check local storage access and try again.")}</p></section>`;
     }
+    playPageEntrance();
   }
 
   function heading(eyebrow, title, description, action = "") {
@@ -2592,9 +2602,16 @@
 
   function navigate(page) {
     if (!PAGE_NAMES[page]) return;
+    if (state.page === page) return;
     state.page = page;
+    state.pageTransitionRequested = true;
     byId("page-name").textContent = PAGE_NAMES[page];
-    document.querySelectorAll(".nav-item[data-page]").forEach((button) => button.classList.toggle("active", button.dataset.page === page));
+    document.querySelectorAll(".nav-item[data-page]").forEach((button) => {
+      const active = button.dataset.page === page;
+      button.classList.toggle("active", active);
+      if (active) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
+    });
     history.replaceState(null, "", `#${page}`);
     refresh();
   }
