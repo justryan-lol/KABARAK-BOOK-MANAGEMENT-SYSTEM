@@ -535,7 +535,7 @@
         const grade = targetClass?.grade_label || csvValue(row, indexes, ["grade", "form", "year_group"]);
         const classLabel = targetClass?.class_label || targetClass?.display_name || csvValue(row, indexes, ["current_class", "class_name", "class_label", "class", "stream"]);
         const classInput = csvValue(row, indexes, ["class_number", "class_no", "stream_number"]);
-        const classMatch = (classInput || classLabel).match(/(?:class\s*)?(\d+)$/i);
+        const classMatch = (classInput || classLabel).match(/(?:class\s*)?(\d+)$/i) || grade.match(/(\d+)$/);
         const classNumber = classMatch ? Number(classMatch[1]) : null;
         const currentClass = classLabel && !/^class\s*\d+$/i.test(classLabel)
           ? classLabel
@@ -2808,9 +2808,9 @@
     const panel = byId("global-search-results");
     if (panel) panel.hidden = true;
     if (input) input.blur();
-    if (kind === "student") { state.studentQuery = input?.value || ""; navigate("students"); }
-    if (kind === "library") { state.inventoryQuery = input?.value || ""; navigate("inventory"); }
-    if (kind === "textbook") { state.textbookQuery = input?.value || ""; navigate("bookstore"); }
+    if (kind === "student") { state.studentQuery = input?.value || ""; state.page === "students" ? refresh() : navigate("students"); }
+    if (kind === "library") { state.inventoryQuery = input?.value || ""; state.page === "inventory" ? refresh() : navigate("inventory"); }
+    if (kind === "textbook") { state.textbookQuery = input?.value || ""; state.page === "bookstore" ? refresh() : navigate("bookstore"); }
     if (kind === "class") { state.selectedClassId = id; state.classRosterQuery = ""; navigate("class-roster"); }
     if (kind === "staff") navigate("governance");
   }
@@ -2822,7 +2822,7 @@
     state.pageTransitionRequested = true;
     byId("page-name").textContent = PAGE_NAMES[page];
     document.querySelectorAll(".nav-item[data-page]").forEach((button) => {
-      const active = button.dataset.page === page;
+      const active = button.dataset.page === page || (page === "class-roster" && button.dataset.page === "year-setup");
       button.classList.toggle("active", active);
       if (active) button.setAttribute("aria-current", "page");
       else button.removeAttribute("aria-current");
@@ -2998,6 +2998,19 @@
       const first = byId("global-search-results")?.querySelector("[data-global-search-kind]");
       if (first) { event.preventDefault(); openGlobalSearchResult(first.dataset.globalSearchKind, first.dataset.globalSearchId); }
     }
+  });
+  document.addEventListener("keydown", (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault(); byId("global-search")?.focus(); byId("global-search")?.select();
+    }
+  });
+  document.addEventListener("input", (event) => {
+    if (event.target.id !== "class-roster-search") return;
+    state.classRosterQuery = event.target.value;
+    const query = state.classRosterQuery.trim().toLowerCase();
+    content.querySelectorAll("tbody tr[data-roster-search]").forEach((row) => {
+      row.hidden = Boolean(query) && !row.dataset.rosterSearch.includes(query);
+    });
   });
   document.addEventListener("click", (event) => {
     if (!event.target.closest(".global-search")) {
