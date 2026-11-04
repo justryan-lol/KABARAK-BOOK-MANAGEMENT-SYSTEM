@@ -75,6 +75,18 @@
     }
   }, true);
 
+  function setPublicGate(showWelcome) {
+    const welcome = byId("public-home");
+    const shell = byId("app-shell");
+    if (!welcome || !shell) return;
+    welcome.hidden = !showWelcome;
+    shell.hidden = showWelcome;
+    document.body.classList.toggle("auth-pending", showWelcome);
+    const entry = welcome.querySelector('[data-action="public-enter"]');
+    if (entry) entry.querySelector("span").textContent = state.syncConfig ? "Staff sign in" : "Open demo workspace";
+    if (entry) entry.setAttribute("aria-label", state.syncConfig ? "Sign in to the KBMS staff portal" : "Open the local KBMS demo workspace");
+  }
+
   function setSyncStatus(kind, label) {
     const indicator = byId("sync-indicator");
     indicator.className = `sync-indicator${kind === "pending" ? " pending" : kind === "error" ? " error" : ""}`;
@@ -2264,10 +2276,12 @@
     const config = window.BOOKSTORE_CONFIG;
     state.syncConfig = config?.url && config?.anonKey ? config : null;
     if (!config || !config.url || !config.anonKey) {
+      setPublicGate(false);
       setSyncStatus("offline", "Local demo only");
       return;
     }
     state.syncConfig = config;
+    setPublicGate(true);
     if (!/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(config.url)) {
       setSyncStatus("error", "Backend URL invalid");
       notify("Supabase URL must be an HTTPS origin.", true);
@@ -2294,6 +2308,7 @@
       } else {
         await clearSyncedWorkspace();
         setSyncStatus("offline", "Sign in to access records");
+        setPublicGate(true);
         await refresh();
       }
     } catch (error) {
@@ -2315,6 +2330,7 @@
       state.session = null;
       state.staffRole = null;
       state.offlineAuthorization = null;
+      setPublicGate(Boolean(state.syncConfig));
       state.sessionTask = null;
       setSyncStatus("pending", "Clearing signed-out device data");
       return (state.sessionTask = (async () => {
@@ -2340,6 +2356,7 @@
       }
       state.staffRole = data.role;
       state.offlineAuthorization = null;
+      setPublicGate(false);
       subscribeToChanges();
       await synchronizeFromServer();
       if (canManageRecords()) await flushOutbox();
@@ -2622,6 +2639,10 @@
   document.addEventListener("click", async (event) => {
     const target = event.target.closest("button");
     if (!target) return;
+    if (target.dataset.action === "public-enter") {
+      if (state.syncConfig) showAuthDialog();
+      else { setPublicGate(false); await refresh(); }
+    }
     if (target.dataset.page) navigate(target.dataset.page);
     if (target.dataset.pageLink) navigate(target.dataset.pageLink);
     if (target.dataset.legal) showLegal(target.dataset.legal);
