@@ -884,6 +884,12 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { width: 
 .sidebar-collapsed .sidebar-toggle { position:absolute; top:18px; right:-7px; z-index:4; width:30px; height:30px; background:var(--wine); box-shadow:0 2px 8px rgb(0 0 0 / 18%); }
 .sidebar-collapsed .sidebar-toggle-icon { transform:rotate(90deg); }
 @media (max-width: 1050px) {
+  .app-shell:not(.sidebar-collapsed) .sidebar { width:258px; padding-right:16px; padding-left:16px; }
+  .app-shell:not(.sidebar-collapsed) .main-area { margin-left:258px; }
+  .app-shell:not(.sidebar-collapsed) .sidebar .brand-copy, .app-shell:not(.sidebar-collapsed) .sidebar .nav-label, .app-shell:not(.sidebar-collapsed) .sidebar .workspace-label, .app-shell:not(.sidebar-collapsed) .sidebar .sidebar-bottom .legal-link, .app-shell:not(.sidebar-collapsed) .sidebar .user-chip > span:nth-child(2), .app-shell:not(.sidebar-collapsed) .sidebar .user-chip .text-button { display:revert; }
+  .app-shell:not(.sidebar-collapsed) .sidebar .nav-item { justify-content:flex-start; gap:12px; padding-right:12px; padding-left:12px; font-size:11px; }
+  .app-shell:not(.sidebar-collapsed) .sidebar .nav-icon { width:19px; }
+  .app-shell:not(.sidebar-collapsed) .sidebar .user-chip { justify-content:flex-start; }
   .sidebar { width:78px; padding-right:10px; padding-left:10px; }
   .main-area { margin-left:78px; }
   .sidebar-brand-row { justify-content:center; }
