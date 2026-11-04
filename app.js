@@ -16,7 +16,7 @@
   };
   const state = {
     page: "dashboard", db: null, supabase: null, session: null, staffRole: null, offlineAuthorization: null, syncConfig: null, sessionTask: null, channel: null,
-    selectedClassId: "", classRosterQuery: "", globalSearchTask: 0, sidebarCollapsed: false, demoMode: DEMO_MODE,
+    selectedClassId: "", classRosterQuery: "", governanceQuery: "", globalSearchTask: 0, sidebarCollapsed: false, demoMode: DEMO_MODE,
     inventoryQuery: "", studentQuery: "", bookstoreReturnQuery: "", inventoryFilter: "all", inventoryView: "table", studentFilter: "all", textbookQuery: "",
     circulationMode: "issue", deferredInstall: null, syncing: false, remoteRefreshTimer: null, pageTransitionRequested: false,
   };
@@ -352,8 +352,8 @@
   }
 
   function formField(label, name, options = {}) {
-    const { required = true, type = "text", placeholder = "", value = "", min, max, maxLength, choices, full = false, hint = "", textarea = false } = options;
-    const attrs = `${required ? "required" : ""}${min !== undefined ? ` min="${min}"` : ""}${max !== undefined ? ` max="${max}"` : ""}${maxLength !== undefined ? ` maxlength="${maxLength}"` : ""}`;
+    const { required = true, type = "text", placeholder = "", value = "", min, max, maxLength, choices, full = false, hint = "", textarea = false, readonly = false } = options;
+    const attrs = `${required ? "required" : ""}${readonly ? " readonly" : ""}${min !== undefined ? ` min="${min}"` : ""}${max !== undefined ? ` max="${max}"` : ""}${maxLength !== undefined ? ` maxlength="${maxLength}"` : ""}`;
     const control = choices
       ? `<select name="${name}" ${attrs}>${choices.map(([key, title]) => `<option value="${escapeHtml(key)}"${key === value ? " selected" : ""}>${escapeHtml(title)}</option>`).join("")}</select>`
       : textarea
@@ -1409,7 +1409,7 @@
     const latestClearance = (studentId, department) => byNewest(clearanceRecords.filter((item) => item.student_id === studentId && item.department === department))[0];
     const filtered = students.filter((student) => {
       const query = state.studentQuery.toLowerCase();
-      const matches = !query || [student.full_name, student.admission_number].some((item) => String(item || "").toLowerCase().includes(query));
+      const matches = !query || [student.full_name, student.admission_number, student.current_class, student.grade, student.house_code].some((item) => String(item || "").toLowerCase().includes(query));
       return matches && (student.active !== false || Boolean(query)) && (state.studentFilter === "all" || student.house_code === state.studentFilter);
     }).sort((a, b) => String(a.admission_number || "").localeCompare(String(b.admission_number || ""), undefined, { numeric: true, sensitivity: "base" }));
     const activeLoans = loans.filter((loan) => !loan.returned_at);
@@ -1442,12 +1442,14 @@
       getAll("staff_assignments"), getAll("approval_requests"), getAll("audit_events"),
     ]);
     const staffMap = new Map(staff.map((item) => [item.id, item]));
+    const staffQuery = state.governanceQuery.trim().toLowerCase();
+    const visibleStaff = staff.filter((person) => !staffQuery || [person.display_name, person.staff_code, person.role, person.role_label].some((value) => String(value || "").toLowerCase().includes(staffQuery)));
     const classMap = new Map(classes.map((item) => [item.id, item]));
     const subjectMap = new Map(subjects.map((item) => [item.id, item]));
     content.innerHTML = `${heading("SCHOOL ADMINISTRATION", "Staff & approvals", "Preview teacher assignments, staff roles and approval history using fictional demonstration records.", `<button class="button button-secondary" data-action="demo-request-approval">New approval request</button>`)}
       <section class="panel demo-warning"><div class="panel-body"><strong>Demonstration only — not staff authentication</strong><p>These sample staff profiles and decisions are stored only in this browser. They do not create accounts, enforce permissions or authorize real school transactions.</p></div></section>
       <section class="stats-grid">${statCard("DEMO STAFF", staff.length, "Fictional staff profiles")}${statCard("ACTIVE ASSIGNMENTS", assignments.filter((item) => item.active !== false).length, "Class and subject links")}${statCard("PENDING APPROVALS", approvals.filter((item) => item.status === "pending").length, "Awaiting a demo decision")}${statCard("AUDIT EVENTS", audits.length, "Local workflow history")}</section>
-      <section class="panel"><div class="panel-header"><div><h2>Staff directory</h2><p>Roles are examples only; no passwords or login credentials are stored.</p></div></div><div class="table-wrap"><table><thead><tr><th>Staff code</th><th>Name</th><th>Role</th><th>Status</th></tr></thead><tbody>${staff.length ? staff.map((person) => `<tr><td class="code-text">${escapeHtml(person.staff_code || "—")}</td><td><strong>${escapeHtml(person.display_name)}</strong></td><td>${escapeHtml(person.role_label || person.role)}</td><td><span class="status-tag ${person.active === false ? "danger" : "good"}">${person.active === false ? "Inactive" : "Active"}</span></td></tr>`).join("") : `<tr><td colspan="4" class="table-empty">No demonstration staff profiles loaded.</td></tr>`}</tbody></table></div></section>
+      <section class="panel"><div class="panel-header"><div><h2>Staff directory</h2><p>${visibleStaff.length} of ${staff.length} fictional staff profiles</p></div><div class="search-wrap"><input class="search-input" id="governance-staff-search" type="search" value="${escapeHtml(state.governanceQuery)}" placeholder="Search staff name, code or role"></div></div><div class="table-wrap"><table><thead><tr><th>Staff code</th><th>Name</th><th>Role</th><th>Status</th></tr></thead><tbody>${visibleStaff.length ? visibleStaff.map((person) => `<tr data-staff-search="${escapeHtml(`${person.display_name} ${person.staff_code || ""} ${person.role} ${person.role_label || ""}`.toLowerCase())}"><td class="code-text">${escapeHtml(person.staff_code || "—")}</td><td><strong>${escapeHtml(person.display_name)}</strong></td><td>${escapeHtml(person.role_label || person.role)}</td><td><span class="status-tag ${person.active === false ? "danger" : "good"}">${person.active === false ? "Inactive" : "Active"}</span></td></tr>`).join("") : `<tr><td colspan="4" class="table-empty">No demonstration staff profiles loaded.</td></tr>`}</tbody></table></div></section>
       <section class="panel" style="margin-top:16px"><div class="panel-header"><div><h2>Teacher assignments</h2><p>Assignments are date-aware and remain in history when ended.</p></div><button class="button button-secondary" data-action="demo-add-assignment">Add demo assignment</button></div><div class="table-wrap"><table><thead><tr><th>Teacher</th><th>Assignment</th><th>Class</th><th>Subject</th><th>From</th><th>Status</th><th></th></tr></thead><tbody>${assignments.length ? byNewest(assignments).map((item) => `<tr><td>${escapeHtml(staffMap.get(item.staff_id)?.display_name || "Unknown staff")}</td><td>${escapeHtml(item.assignment_type?.replaceAll("_", " ") || "Teacher")}</td><td>${escapeHtml(classMap.get(item.class_id)?.display_name || "—")}</td><td>${escapeHtml(subjectMap.get(item.subject_id)?.name || "Class teacher")}</td><td>${escapeHtml(item.starts_on || "—")}</td><td><span class="status-tag ${item.active === false ? "" : "good"}">${item.active === false ? "Ended" : "Active"}</span></td><td>${item.active === false ? "" : `<button class="footer-link" data-end-demo-assignment="${escapeHtml(item.id)}">End assignment</button>`}</td></tr>`).join("") : `<tr><td colspan="7" class="table-empty">No assignments have been added.</td></tr>`}</tbody></table></div></section>
       <section class="panel" style="margin-top:16px"><div class="panel-header"><div><h2>Principal approval queue</h2><p>Requests, decisions and reasons are retained in the local demonstration history.</p></div></div><div class="table-wrap"><table><thead><tr><th>Request</th><th>Submitted by</th><th>Requested</th><th>Status</th><th>Decision</th></tr></thead><tbody>${approvals.length ? byNewest(approvals).map((item) => `<tr><td><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.description || "")}</small></td><td>${escapeHtml(item.requested_by_label || "Demo staff")}</td><td>${escapeHtml(item.requested_at || "—")}</td><td><span class="status-tag ${item.status === "approved" ? "good" : item.status === "rejected" ? "danger" : "warn"}">${escapeHtml(item.status)}</span></td><td>${item.status === "pending" ? `<button class="footer-link" data-decide-demo-approval="${escapeHtml(item.id)}" data-decision="approved">Approve</button> · <button class="footer-link" data-decide-demo-approval="${escapeHtml(item.id)}" data-decision="rejected">Reject</button>` : `${escapeHtml(item.decision_note || "Decision recorded")}`}</td></tr>`).join("") : `<tr><td colspan="5" class="table-empty">No approval requests.</td></tr>`}</tbody></table></div></section>`;
   }
@@ -2012,7 +2014,7 @@
       formField("Admission number", "admission_number", { maxLength: 64, full: true }),
       formField("Student full name", "full_name", { maxLength: 160, full: true }),
       formField("House", "house_code", { choices: Object.entries(HOUSES).filter(([code]) => !classRecord?.school_section || code[1] === classRecord.school_section).map(([code, name]) => [code, `${code} · ${name}`]) }),
-      ...(classRecord ? [formField("Assigned class", "assigned_class", { value: classRecord.class_label || classRecord.display_name, maxLength: 100, full: true, hint: "This student will be added directly to the selected class." })] : [formField("Grade / form", "grade", { value: currentYear >= 2028 ? "Grade 10" : "Grade 9", maxLength: 40, full: true, hint: "Use the class label approved for the current academic year." }), formField("Class number", "class_number", { type: "number", min: 1, max: 999, value: 1 })]),
+      ...(classRecord ? [formField("Assigned class", "assigned_class", { value: classRecord.class_label || classRecord.display_name, maxLength: 100, full: true, readonly: true, hint: "This student will be added directly to the selected class." })] : [formField("Grade / form", "grade", { value: currentYear >= 2028 ? "Grade 10" : "Grade 9", maxLength: 40, full: true, hint: "Use the class label approved for the current academic year." }), formField("Class number", "class_number", { type: "number", min: 1, max: 999, value: 1 })]),
     ].join("");
     showForm("Register student", fields, "Register student", async (form) => {
       const admission = String(form.get("admission_number")).trim();
@@ -2820,7 +2822,7 @@
     if (kind === "library") { state.inventoryQuery = input?.value || ""; state.page === "inventory" ? refresh() : navigate("inventory"); }
     if (kind === "textbook") { state.textbookQuery = input?.value || ""; state.page === "bookstore" ? refresh() : navigate("bookstore"); }
     if (kind === "class") { state.selectedClassId = id; state.classRosterQuery = ""; navigate("class-roster"); }
-    if (kind === "staff") navigate("governance");
+    if (kind === "staff") { state.governanceQuery = input?.value || ""; state.page === "governance" ? refresh() : navigate("governance"); }
   }
 
   function navigate(page) {
@@ -3013,12 +3015,16 @@
     }
   });
   document.addEventListener("input", (event) => {
-    if (event.target.id !== "class-roster-search") return;
-    state.classRosterQuery = event.target.value;
-    const query = state.classRosterQuery.trim().toLowerCase();
-    content.querySelectorAll("tbody tr[data-roster-search]").forEach((row) => {
-      row.hidden = Boolean(query) && !row.dataset.rosterSearch.includes(query);
-    });
+    if (event.target.id === "class-roster-search") {
+      state.classRosterQuery = event.target.value;
+      const query = state.classRosterQuery.trim().toLowerCase();
+      content.querySelectorAll("tbody tr[data-roster-search]").forEach((row) => { row.hidden = Boolean(query) && !row.dataset.rosterSearch.includes(query); });
+    }
+    if (event.target.id === "governance-staff-search") {
+      state.governanceQuery = event.target.value;
+      const query = state.governanceQuery.trim().toLowerCase();
+      content.querySelectorAll("tbody tr[data-staff-search]").forEach((row) => { row.hidden = Boolean(query) && !row.dataset.staffSearch.includes(query); });
+    }
   });
   document.addEventListener("click", (event) => {
     if (!event.target.closest(".global-search")) {
