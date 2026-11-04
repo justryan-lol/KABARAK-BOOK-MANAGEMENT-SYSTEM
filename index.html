@@ -42,13 +42,14 @@
       <footer class="public-home-footer"><span>MOI HIGH SCHOOL – KABARAK</span><span>ON EARTH WE RISE <i>·</i> NAKURU COUNTY, KENYA</span></footer>
     </main>
     <div class="app-shell" id="app-shell" hidden>
+      <button class="mobile-nav-backdrop" id="mobile-nav-backdrop" type="button" data-action="mobile-nav-close" aria-label="Close navigation" hidden></button>
       <aside class="sidebar" aria-label="Main navigation">
         <div class="sidebar-brand-row"><a class="brand" href="#dashboard" aria-label="Kabarak Book Management overview">
           <img class="crest" src="./mhsk-crest.png" alt="Moi High School - Kabarak crest">
           <span class="brand-copy"><strong>KABARAK</strong><small>BOOK MANAGEMENT</small></span>
         </a><button class="sidebar-toggle" id="sidebar-toggle" type="button" data-action="toggle-sidebar" aria-label="Collapse sidebar" aria-expanded="true" title="Collapse navigation"><span class="sidebar-toggle-icon" aria-hidden="true"></span></button></div>
         <div class="nav-label">LIBRARY</div>
-        <nav class="nav-list">
+        <nav class="nav-list" id="main-navigation">
           <button class="nav-item active" data-page="dashboard"><span class="nav-icon">◫</span>Overview</button>
           <button class="nav-item" data-page="circulation"><span class="nav-icon">↔</span>Issue &amp; return</button>
           <button class="nav-item" data-page="inventory"><span class="nav-icon">▤</span>Library catalog</button>
@@ -77,6 +78,7 @@
 
       <main class="main-area">
         <header class="topbar">
+          <button class="mobile-nav-toggle" id="mobile-nav-toggle" type="button" data-action="mobile-nav-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="main-navigation"><span></span><span></span><span></span></button>
           <div class="breadcrumb"><span>KABARAK BOOK MANAGEMENT</span><span class="crumb-slash">/</span><strong id="page-name">Overview</strong></div>
           <div class="global-search"><label class="global-search-field"><span class="global-search-icon" aria-hidden="true">⌕</span><input id="global-search" type="search" autocomplete="off" placeholder="Search students, books, classes…" aria-label="Search all KBMS records" aria-controls="global-search-results"><kbd>⌘ K</kbd></label><div id="global-search-results" class="global-search-results" role="listbox" hidden></div></div>
           <div class="top-actions"><span class="demo-mode-label">DEMO · FICTIONAL DATA</span><span id="sync-indicator" class="sync-indicator"><span class="status-dot"></span><span>Offline ready</span></span><button class="button button-quiet" id="install-button" type="button" hidden>Install app</button><span id="today-label" class="date-label"></span></div>
