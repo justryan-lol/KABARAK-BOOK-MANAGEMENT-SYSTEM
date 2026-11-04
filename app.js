@@ -937,6 +937,145 @@
     await refresh();
   }
 
+
+  async function upgradeDemoScenario() {
+    if (!state.demoMode || state.syncConfig) return;
+    const marker = await getStoredRecord("system_settings", "demo-scenario-v3");
+    if (marker) return;
+    const now = new Date().toISOString();
+    const names = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa", "Lambda", "Mu", "Nu", "Xi", "Omicron", "Pi"];
+    const [students, classes, years, copies, allocations, books, loans] = await Promise.all([
+      getAll("students"), getAll("school_classes"), getAll("academic_years"), getAll("textbook_copies"),
+      getAll("textbook_allocations"), getAll("books"), getAll("loans"),
+    ]);
+    if (students.length !== 1000 || copies.length !== 1040) {
+      throw new Error("The demo upgrade expected the 1,000-student and 1,040-copy sample dataset. Reload the public demo to restore its prepared records.");
+    }
+    const currentYear = years.find((year) => year.is_current) || years[0];
+    if (!currentYear) throw new Error("The demo academic year is missing.");
+    const upgradedClasses = [...classes];
+    for (let index = 0; index < names.length; index += 1) {
+      const label = `Grade 10 ${names[index]}`;
+      const existing = upgradedClasses[index];
+      const record = {
+        ...(existing || {}), id: existing?.id || crypto.randomUUID(),
+        academic_year_id: currentYear.id, class_code: `G10-${names[index].toUpperCase()}`,
+        display_name: label, grade: "Grade 10", grade_label: "Grade 10", class_label: label,
+        school_section: index % 2 === 0 ? "G" : "B", active: true, archived_at: null,
+        created_at: existing?.created_at || now,
+      };
+      if (existing) await writeRecord("school_classes", record);
+      else { await writeRecord("school_classes", record); upgradedClasses.push(record); }
+    }
+    const updatedStudents = students.map((student) => {
+      const index = Math.max(0, Number(String(student.admission_number).replace(/^DEMO-/, "")) - 1001);
+      const classNumber = (Math.floor(index / 4) % 16) + 1;
+      return normalizeStudentRecord({
+        ...student, grade: "Grade 10", class_number: classNumber,
+        current_class: `Grade 10 ${names[classNumber - 1]}`,
+        school_section: classNumber % 2 === 1 ? "G" : "B",
+        updated_at: now,
+      });
+    });
+    await replaceAll("students", updatedStudents);
+
+    const libraryAdditions = Array.from({ length: 16 }, (_, index) => {
+      const sequence = index + 5;
+      const accession_code = `LIB-${String(sequence).padStart(3, "0")}-2026`;
+      const titles = [
+        ["Kiswahili Fasihi na Lugha", "Kiswahili", 2022], ["The River and the Source", "English", 2021],
+        ["General Biology", "Biology", 2023], ["Chemistry in Context", "Chemistry", 2022],
+        ["Fundamentals of Physics", "Physics", 2021], ["Atlas of East Africa", "Geography", 2024],
+        ["Kenya: A History", "History & Government", 2020], ["Foundations of Christian Ethics", "CRE", 2023],
+        ["Practical Agriculture", "Agriculture", 2024], ["Introduction to Computing", "Computer Studies", 2022],
+        ["Principles of Commerce", "Business Studies", 2021], ["Integrated Science Workbook", "Integrated Science", 2024],
+        ["Mathematical Problem Solving", "Mathematics", 2020], ["Modern Kiswahili Reader", "Kiswahili", 2023],
+        ["Environmental Geography", "Geography", 2022], ["Literature and Society", "English", 2024],
+      ];
+      const [title, subject, purchase_year] = titles[index];
+      return {
+        id: crypto.randomUUID(), accession_code, prefix: "LIB", accession_number: String(sequence),
+        purchase_year, title, description: "Fictional demonstration library copy",
+        subject, publisher: "KBMS Demo Press", condition: "Available", cover_image: null,
+        created_at: now, updated_at: now,
+      };
+    });
+    await writeRecords("books", libraryAdditions);
+    const libraryHistory = libraryAdditions.map((book, index) => {
+      const student = updatedStudents[10 + index];
+      const returned = index >= 12;
+      const dueOffset = index < 4 ? -4 - index : index < 12 ? 5 + index : -7;
+      const issuedOffset = index < 4 ? -12 - index : index < 12 ? -3 : -18;
+      const issuedAt = demoDateOffset(issuedOffset);
+      return {
+        id: crypto.randomUUID(), student_id: student.id, book_id: book.id,
+        student_admission_snapshot: student.admission_number, student_name_snapshot: student.full_name,
+        house_code_snapshot: student.house_code, grade_snapshot: student.grade,
+        class_number_snapshot: student.class_number, class_snapshot: student.current_class,
+        book_code_snapshot: book.accession_code, book_title_snapshot: book.title,
+        purchase_year_snapshot: book.purchase_year, issued_at: issuedAt,
+        due_date: demoDateOffset(dueOffset), returned_at: returned ? demoDateOffset(-2) : null,
+        created_at: new Date(`${issuedAt}T09:00:00`).toISOString(), updated_at: now,
+      };
+    });
+    await replaceAll("loans", [...loans, ...libraryHistory]);
+
+    const additionalActive = copies.slice(750, 900).map((copy, index) => {
+      const student = updatedStudents[750 + index];
+      return {
+        id: crypto.randomUUID(), copy_id: copy.id, copy_code_snapshot: copy.copy_code,
+        title_snapshot: copy.title, subject_snapshot: copy.subject, student_id: student.id,
+        student_admission_snapshot: student.admission_number, student_name_snapshot: student.full_name,
+        grade_snapshot: student.grade, class_number_snapshot: student.class_number,
+        class_snapshot: student.current_class, academic_year: Number(currentYear.year_label),
+        allocated_at: demoDateOffset(-(12 + index % 70)), due_date: currentYear.ends_on,
+        returned_at: null, created_at: now, updated_at: now,
+      };
+    });
+    await createTextbookAllocations(additionalActive);
+    const returnedTextbooks = copies.slice(900, 940).map((copy, index) => {
+      const student = updatedStudents[900 + index];
+      return {
+        id: crypto.randomUUID(), copy_id: copy.id, copy_code_snapshot: copy.copy_code,
+        title_snapshot: copy.title, subject_snapshot: copy.subject, student_id: student.id,
+        student_admission_snapshot: student.admission_number, student_name_snapshot: student.full_name,
+        grade_snapshot: student.grade, class_number_snapshot: student.class_number,
+        class_snapshot: student.current_class, academic_year: Number(currentYear.year_label) - 1,
+        allocated_at: demoDateOffset(-65), due_date: demoDateOffset(-25),
+        returned_at: demoDateOffset(-20 - index % 8), created_at: now, updated_at: now,
+      };
+    });
+    await writeRecords("textbook_allocations", returnedTextbooks);
+
+    const archivedYear = {
+      id: crypto.randomUUID(), year_label: String(Number(currentYear.year_label) - 1),
+      starts_on: `${Number(currentYear.year_label) - 1}-01-01`,
+      ends_on: `${Number(currentYear.year_label) - 1}-12-31`,
+      is_current: false, status: "closed", archived_at: demoDateOffset(-30), created_at: now,
+    };
+    const archivedClassNames = ["Alpha", "Beta", "Gamma", "Delta"];
+    const archivedClasses = archivedClassNames.map((name, index) => ({
+      id: crypto.randomUUID(), academic_year_id: archivedYear.id,
+      class_code: `G9-${name.toUpperCase()}-ARCHIVE`, display_name: `Grade 9 ${name}`,
+      grade: "Grade 9", grade_label: "Grade 9", class_label: `Grade 9 ${name}`,
+      school_section: index % 2 === 0 ? "G" : "B", active: false,
+      archived_at: archivedYear.archived_at, created_at: now,
+    }));
+    const archivedStudents = updatedStudents.slice(0, 64).map((student, index) => ({
+      id: crypto.randomUUID(), class_id: archivedClasses[Math.floor(index / 16)].id,
+      admission_number_snapshot: `2025-${student.admission_number}`,
+      full_name_snapshot: student.full_name, house_code: student.house_code,
+      school_section: student.school_section, created_at: now,
+    }));
+    await writeRecord("academic_years", archivedYear);
+    await writeRecords("school_classes", archivedClasses);
+    await writeRecords("class_archive_students", archivedStudents);
+    await writeRecord("system_settings", {
+      id: "demo-scenario-v3", value: true, updated_at: now,
+      description: "Sixteen classes, expanded lending activity and historical archive examples",
+    });
+  }
+
   async function renderDashboard() {
     const [books, students, loans, textbookCopies, textbookAllocations] = await Promise.all([getAll("books"), getAll("students"), getAll("loans"), getAll("textbook_copies"), getAll("textbook_allocations")]);
     const circulating = loans.filter((loan) => !loan.returned_at);
@@ -3112,6 +3251,7 @@
       if (!state.syncConfig) {
         const [students, books, copies, allocations] = await Promise.all([getAll("students"), getAll("books"), getAll("textbook_copies"), getAll("textbook_allocations")]);
         if (!students.length && !books.length && !copies.length && !allocations.length) await loadFictionalDemoData();
+        await upgradeDemoScenario();
       }
       const initialPage = location.hash.slice(1);
       navigate(PAGE_NAMES[initialPage] ? initialPage : "dashboard");
