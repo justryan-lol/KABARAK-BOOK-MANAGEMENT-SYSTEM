@@ -710,3 +710,111 @@ body.auth-pending .app-shell { display: none !important; }
 #app-shell[hidden] {
   display: none !important;
 }
+
+
+/* Focused sign-in transition: a brief, accessible full-screen sync moment. */
+.signin-transition {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 28px;
+  border: 0;
+  overflow: hidden;
+  color: #fff;
+  background: transparent;
+  opacity: 1;
+  transition: opacity .22s ease, transform .22s ease;
+}
+.signin-transition::backdrop {
+  background: rgba(13, 13, 27, .72);
+  backdrop-filter: blur(12px);
+}
+.signin-transition[open] {
+  display: grid;
+  place-items: center;
+}
+.signin-transition.is-leaving {
+  opacity: 0;
+  transform: scale(1.025);
+}
+.signin-transition-content {
+  position: relative;
+  display: flex;
+  width: min(540px, 100%);
+  min-height: 330px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  padding: clamp(28px, 6vw, 58px);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 26px;
+  text-align: center;
+  box-shadow: 0 30px 100px rgba(0,0,0,.24);
+  isolation: isolate;
+}
+.signin-transition-content::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  background: linear-gradient(135deg, #5b4bdb 0%, #302c75 52%, #151c3c 100%);
+}
+.signin-transition.palette-ocean .signin-transition-content::before {
+  background: linear-gradient(135deg, #087e8b 0%, #155e75 48%, #172554 100%);
+}
+.signin-transition.palette-forest .signin-transition-content::before {
+  background: linear-gradient(135deg, #16856b 0%, #14532d 50%, #102a43 100%);
+}
+.signin-transition.palette-sunset .signin-transition-content::before {
+  background: linear-gradient(135deg, #e06b55 0%, #9d426b 48%, #39275f 100%);
+}
+.signin-transition .eyebrow {
+  margin: 7px 0 0;
+  color: rgba(255,255,255,.76);
+  font-size: 9px;
+  letter-spacing: .2em;
+}
+.signin-transition h2 {
+  margin: 0;
+  color: white;
+  font: 600 clamp(25px, 5vw, 34px)/1.15 Georgia, serif;
+}
+.signin-transition-status {
+  margin: 0;
+  color: rgba(255,255,255,.78);
+  font-size: 12px;
+}
+.signin-quote {
+  max-width: 370px;
+  margin: 17px 0 0;
+  color: #fff;
+  font: italic 17px/1.55 Georgia, serif;
+}
+.signin-transition-foot {
+  margin-top: 15px;
+  color: rgba(255,255,255,.62);
+  font-size: 8px;
+  letter-spacing: .18em;
+}
+.signin-spinner {
+  width: 27px;
+  height: 27px;
+  border: 2px solid rgba(255,255,255,.28);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: signin-spin .75s linear infinite;
+}
+@keyframes signin-spin { to { transform: rotate(360deg); } }
+@media (max-width: 520px) {
+  .signin-transition { padding: 18px; }
+  .signin-transition-content { min-height: 300px; border-radius: 20px; }
+  .signin-quote { font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .signin-spinner { animation: none; }
+  .signin-transition { transition: none; }
+}
