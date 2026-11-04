@@ -710,3 +710,99 @@ body.auth-pending .app-shell { display: none !important; }
 #app-shell[hidden] {
   display: none !important;
 }
+
+
+/* KBMS sign-in transition: restrained school palette, quiet motion, no generic gradients. */
+.signin-transition {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 24px;
+  border: 0;
+  overflow: hidden;
+  color: var(--ink);
+  background: transparent;
+  opacity: 1;
+  transition: opacity .24s ease, transform .24s ease;
+}
+.signin-transition::backdrop {
+  background: rgb(247 245 240 / 94%);
+  backdrop-filter: blur(5px);
+}
+.signin-transition[open] {
+  display: grid;
+  place-items: center;
+}
+.signin-transition.is-leaving {
+  opacity: 0;
+  transform: translateY(5px);
+}
+.signin-transition-content {
+  position: relative;
+  display: flex;
+  width: min(440px, 100%);
+  min-height: 290px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: clamp(28px, 5vw, 48px);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--wine);
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: center;
+  box-shadow: 0 18px 55px rgb(52 25 37 / 9%);
+}
+.signin-transition .eyebrow {
+  margin: 8px 0 0;
+  color: var(--wine-soft);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .19em;
+}
+.signin-transition h2 {
+  margin: 0;
+  color: var(--wine-deep);
+  font: 600 clamp(24px, 4vw, 31px)/1.18 Georgia, serif;
+}
+.signin-transition-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.signin-quote {
+  max-width: 340px;
+  margin: 13px 0 0;
+  color: var(--wine-soft);
+  font: italic 16px/1.55 Georgia, serif;
+}
+.signin-transition-foot {
+  margin-top: 12px;
+  color: #93878b;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .17em;
+}
+.signin-spinner {
+  width: 25px;
+  height: 25px;
+  border: 2px solid #eadfe3;
+  border-top-color: var(--wine);
+  border-right-color: var(--gold);
+  border-radius: 50%;
+  animation: signin-spin .85s linear infinite;
+}
+@keyframes signin-spin { to { transform: rotate(360deg); } }
+@media (max-width: 520px) {
+  .signin-transition { padding: 18px; }
+  .signin-transition-content { min-height: 270px; border-radius: 10px; }
+  .signin-quote { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .signin-spinner { animation: none; }
+  .signin-transition { transition: none; }
+}

@@ -770,20 +770,36 @@
     const makeStudent = (admission, fullName, house, section, classNumber = 1) => ({
       id: crypto.randomUUID(), admission_number: admission, full_name: fullName,
       house_code: `${house}${section}`, house, school_section: section,
-      current_class: classNumber === 1 ? "Grade 10 Delta" : "Grade 10 Alpha", active: true,
+      current_class: ["Grade 10 Delta", "Grade 10 Alpha", "Grade 10 Beta", "Grade 10 Gamma"][classNumber - 1], active: true,
       grade: "Grade 10", class_number: classNumber, academic_status: "active",
       created_at: now, updated_at: now,
     });
-    const demoStudents = [
-      makeStudent("DEMO-1001", "Amina Njoroge", "T", "G"),
-      makeStudent("DEMO-1002", "Brian Kiptoo", "A", "B"),
-      makeStudent("DEMO-1003", "Wanjiku Muthoni", "N", "G", 2),
-      makeStudent("DEMO-1004", "Kevin Otieno", "M", "B", 2),
-      makeStudent("DEMO-1005", "Faith Chebet", "T", "G"),
-      makeStudent("DEMO-1006", "Daniel Mwangi", "A", "B"),
-      makeStudent("DEMO-1007", "Mary Atieno", "N", "G", 2),
-      makeStudent("DEMO-1008", "Samuel Maina", "M", "B", 2),
+    const firstNames = [
+      "Amina", "Brian", "Wanjiku", "Kevin", "Faith", "Daniel", "Mary", "Samuel", "Grace", "Peter",
+      "Lydia", "James", "Anne", "David", "Mercy", "Joseph", "Esther", "Michael", "Joy", "Collins",
+      "Njeri", "Patrick", "Naomi", "Ethan", "Sharon", "Victor", "Miriam", "Ian", "Purity", "Dennis",
+      "Cynthia", "Mark", "Beatrice", "Allan", "Caroline", "George", "Diana", "Martin", "Sheila", "Felix",
     ];
+    const surnames = [
+      "Njoroge", "Kiptoo", "Muthoni", "Otieno", "Chebet", "Mwangi", "Atieno", "Maina", "Wanjiru", "Mutua",
+      "Achieng", "Kamau", "Wambui", "Omondi", "Kariuki", "Cheruiyot", "Nyambura", "Kimani", "Jepkosgei", "Ochieng",
+      "Mbugua", "Kilonzo", "Adhiambo", "Githinji", "Barasa",
+    ];
+    const houseCodes = ["T", "A", "N", "M"];
+    const demoStudents = Array.from({ length: 1000 }, (_, index) => {
+      const firstName = firstNames[index % firstNames.length];
+      const surname = surnames[Math.floor(index / firstNames.length)];
+      const house = houseCodes[index % houseCodes.length];
+      const section = Math.floor(index / 4) % 2 === 0 ? "G" : "B";
+      const classNumber = (Math.floor(index / 8) % 4) + 1;
+      return makeStudent(
+        `DEMO-${String(1001 + index)}`,
+        `${firstName} ${surname}`,
+        house,
+        section,
+        classNumber,
+      );
+    });
     const demoLibraryBooks = [
       ["LIB-001-2022", "Foundations of Mathematics · Grade 10", "Mathematics", 2022],
       ["LIB-002-2021", "Integrated Science · Grade 10", "Integrated Science", 2021],
@@ -796,19 +812,39 @@
       publisher: "KBMS Demo Press", condition: "Available", cover_image: null,
       created_at: now, updated_at: now,
     }));
-    const demoTextbooks = [
-      ["INV-001-2020", "Mathematics · Grade 10", "Mathematics", 2020],
-      ["INV-002-2020", "Mathematics · Grade 10", "Mathematics", 2020],
-      ["INV-003-2020", "Mathematics · Grade 10", "Mathematics", 2020],
-      ["INV-004-2021", "Integrated Science · Grade 10", "Integrated Science", 2021],
-      ["INV-005-2021", "Integrated Science · Grade 10", "Integrated Science", 2021],
-      ["INV-006-2022", "English · Grade 10", "English", 2022],
-      ["INV-007-2022", "English · Grade 10", "English", 2022],
-      ["INV-008-2023", "Geography · Grade 10", "Geography", 2023],
-    ].map(([copy_code, title, subject, purchase_year]) => ({
-      id: crypto.randomUUID(), copy_code, title, subject, publisher: "KBMS Demo Press",
-      purchase_year, condition: "Available", cover_image: null, created_at: now, updated_at: now,
-    }));
+    const demoBookTitles = [
+      ["Mathematics", "Foundations of Mathematics", 2024],
+      ["English", "English Language and Literature", 2023],
+      ["Kiswahili", "Kiswahili Sanifu", 2024],
+      ["Biology", "Essentials of Biology", 2022],
+      ["Chemistry", "Introductory Chemistry", 2023],
+      ["Physics", "Principles of Physics", 2022],
+      ["Geography", "Practical Geography", 2021],
+      ["History & Government", "Kenya and the Modern World", 2023],
+      ["CRE", "Christian Religious Education", 2024],
+      ["Agriculture", "Agriculture for Secondary Schools", 2022],
+      ["Computer Studies", "Digital Literacy and Computing", 2024],
+      ["Business Studies", "Foundations of Business Studies", 2023],
+      ["Integrated Science", "Integrated Science Coursebook", 2024],
+    ];
+    // 13 titles, each represented by 80 individually coded physical copies.
+    const demoTextbooks = demoBookTitles.flatMap(([subject, bookTitle, purchase_year], bookIndex) =>
+      Array.from({ length: 80 }, (_, copyIndex) => {
+        const sequence = bookIndex * 80 + copyIndex + 1;
+        return {
+          id: crypto.randomUUID(),
+          copy_code: `INV-${String(sequence).padStart(4, "0")}-2026`,
+          title: `${bookTitle} · Grade 10`,
+          subject,
+          publisher: "KBMS Demo Press",
+          purchase_year,
+          condition: "Available",
+          cover_image: null,
+          created_at: now,
+          updated_at: now,
+        };
+      }),
+    );
 
     await writeRecords("students", demoStudents);
     await writeRecords("books", demoLibraryBooks);
@@ -836,7 +872,7 @@
     await writeRecord("loans", overdueLoan);
     await writeRecord("loans", currentLoan);
 
-    const allocationRecords = demoTextbooks.slice(0, 2).map((copy, index) => {
+    const allocationRecords = demoTextbooks.slice(0, 750).map((copy, index) => {
       const student = demoStudents[index];
       return {
         id: crypto.randomUUID(), copy_id: copy.id, copy_code_snapshot: copy.copy_code,
@@ -844,7 +880,7 @@
         student_admission_snapshot: student.admission_number, student_name_snapshot: student.full_name,
         grade_snapshot: student.grade, class_number_snapshot: student.class_number,
         class_snapshot: student.current_class, academic_year: new Date().getFullYear(),
-        allocated_at: demoDateOffset(-20), due_date: `${new Date().getFullYear()}-12-31`,
+        allocated_at: demoDateOffset(-(20 + (index % 120))), due_date: `${new Date().getFullYear()}-12-31`,
         returned_at: null, created_at: now, updated_at: now,
       };
     });
@@ -870,11 +906,12 @@
     await writeRecords("staff_profiles", demoStaff);
     const demoYearId = crypto.randomUUID();
     const demoYear = { id: demoYearId, year_label: String(new Date().getFullYear()), starts_on: `${new Date().getFullYear()}-01-01`, ends_on: `${new Date().getFullYear()}-12-31`, is_current: true, status: "active", archived_at: null, created_at: now };
-    const demoClasses = [
-      { id: crypto.randomUUID(), academic_year_id: demoYearId, class_code: "G10-DELTA", display_name: "Grade 10 Delta", grade: "Grade 10", grade_label: "Grade 10", class_label: "Grade 10 Delta", active: true, archived_at: null, created_at: now },
-      { id: crypto.randomUUID(), academic_year_id: demoYearId, class_code: "G10-ALPHA", display_name: "Grade 10 Alpha", grade: "Grade 10", grade_label: "Grade 10", class_label: "Grade 10 Alpha", active: true, archived_at: null, created_at: now },
-    ];
-    const demoSubjects = ["Mathematics", "Integrated Science", "English", "Geography"].map((name) => ({ id: crypto.randomUUID(), name, active: true, created_at: now }));
+    const demoClasses = ["Delta", "Alpha", "Beta", "Gamma"].map((label) => ({
+      id: crypto.randomUUID(), academic_year_id: demoYearId, class_code: `G10-${label.toUpperCase()}`,
+      display_name: `Grade 10 ${label}`, grade: "Grade 10", grade_label: "Grade 10",
+      class_label: `Grade 10 ${label}`, active: true, archived_at: null, created_at: now,
+    }));
+    const demoSubjects = demoBookTitles.map(([name]) => ({ id: crypto.randomUUID(), name, active: true, created_at: now }));
     await writeRecord("academic_years", demoYear);
     await writeRecords("school_classes", demoClasses);
     await writeRecords("school_subjects", demoSubjects);
@@ -2519,6 +2556,32 @@
     form.classList.add("auth-form-reject");
   }
 
+  const SIGN_IN_QUOTES = [
+    "Every great library begins with one curious mind.",
+    "Small steps, taken consistently, build remarkable things.",
+    "A good day starts with a question and a page waiting to be read.",
+    "Learning is a journey. Keep turning the page.",
+    "Knowledge grows when we make room for curiosity.",
+    "The future is built one thoughtful decision at a time.",
+  ];
+
+  function showSignInTransition() {
+    const overlay = byId("signin-transition");
+    const quote = byId("signin-quote");
+    quote.textContent = SIGN_IN_QUOTES[Math.floor(Math.random() * SIGN_IN_QUOTES.length)];
+    overlay.classList.remove("is-leaving");
+    if (!overlay.open) overlay.showModal();
+  }
+
+  async function hideSignInTransition() {
+    const overlay = byId("signin-transition");
+    if (!overlay?.open) return;
+    overlay.classList.add("is-leaving");
+    await new Promise((resolve) => window.setTimeout(resolve, 220));
+    if (overlay.open) overlay.close();
+    overlay.classList.remove("is-leaving");
+  }
+
   async function authenticate(event) {
     const form = event.currentTarget;
     if (event.submitter?.value === "cancel") {
@@ -2554,6 +2617,7 @@
     form.classList.remove("auth-form-reject");
     button.disabled = true;
     button.textContent = "Signing in…";
+    showSignInTransition();
     try {
       if (!state.supabase) throw new Error("This installation has no Supabase configuration. Ask the administrator to configure bookstore/config.js.");
       const { data: loginData, error } = await state.supabase.functions.invoke("kbms-username-login", {
@@ -2582,6 +2646,7 @@
     } catch (error) {
       rejectAuth(error.message || "We couldn't sign you in. Check your connection and try again.", ["username", "password"]);
     } finally {
+      await hideSignInTransition();
       button.disabled = false;
       button.textContent = "Sign in";
     }
