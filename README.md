@@ -9,7 +9,7 @@ This is a local presentation build using fictional records only. It is not conne
 1. Extract the complete `KBMS-Work` folder.
 2. On Windows, double-click `START-DEMO.bat`.
 3. Open `http://127.0.0.1:8000/` if the browser does not open automatically.
-4. On Overview, select **Load official demo records**.
+4. Open the public demo route at `https://kabarak-book-management-system.pages.dev/?demo=1`. On an empty browser profile, fictional demo records load automatically. The demo uses a separate browser database and never connects to the configured school Supabase project.
 5. Follow the walkthrough links to Student Register, Issue & Return, Textbook Register, Clearance & Reports, and Staff & Approvals.
 
 The local server is bound to this computer only. Data is stored in this browser profile and does not synchronize to other devices.
@@ -32,13 +32,15 @@ Every name, admission number, staff profile, book title, code and transaction is
 - Textbook register, individual copies and class/subject allocation workflows.
 - Dedicated **Bookstore → Process returns** screen with search by admission number, student name, textbook title, subject or copy code; returns retain the original allocation history.
 - Student register, profiles, CSV and Excel (`.xlsx`) intake, duplicate checks and a downloadable student template.
+- Class directory with member counts, individual student registration into a selected class, class-specific CSV/XLSX roster imports, and a searchable class register.
+- Global search across students, library books, textbook copies, classes and staff; collapsible sidebar with an icon-only rail.
 - Separate library and bookstore clearance history and guarded student departure. In shared mode, clearance is append-only and completion/reopening uses server-checked audited functions.
 - Follow-up reports with CSV, a multi-worksheet `.xlsx` audit workbook and browser print-to-PDF.
 - A local fictional staff/teacher assignment workflow preview; connected deployments include server-checked staff provisioning, username sign-in, mandatory first-login password changes and Principal approval decisions.
 
 ## Important limitations
 
-- **No production database is configured.** The demo is single-browser and local-only.
+- The public `?demo=1` route is single-browser and local-only. It uses a dedicated IndexedDB database (`mhsk-bookstore-demo`) and explicitly bypasses the configured Supabase client. The staff portal at `/` continues to use the school-controlled Supabase project.
 - In local demo mode, staff/approval examples are fictional and do not create login accounts or authorize official actions. In connected mode, the governance screen uses the included protected Supabase Edge Functions and approval RPC; those functions still need deployment and live role testing in a school-controlled development project.
 - Connected sign-in uses a staff username and password through `kbms-username-login`. Staff accounts are provisioned by an active administrator through `kbms-staff-admin`; temporary passwords are displayed once and must be changed at first sign-in. The username flow uses an internal `@staff.kbms.invalid` Auth address, not an email inbox.
 - Database-side teacher allocation checks the active academic year, school section, assigned class, assigned subject, copy availability and duplicate allocations before committing a batch atomically. The deadline must exactly match the configured academic-year end date. Subject-teacher access to textbook copies and allocation history is scoped by subject; class teachers are scoped to their assigned class. Library issues and returns use server-side functions that lock the student/copy records; bookstore and teacher class allocations use atomic server-side batch functions. Staff assignments require active staff and class records; subject-teacher assignments also require an active subject. Assignment history cannot be deleted or rewritten, only closed with an end date. Student departure and clearance operations lock the student record so they cannot race with new issues or allocations. Library loans, textbook allocations, clearance events and audit events cannot be directly rewritten or deleted by authenticated clients. Date-sensitive server rules use the Africa/Nairobi calendar date. These controls are implemented in SQL but have not yet been executed against PostgreSQL.
