@@ -610,3 +610,25 @@ body.auth-pending .app-shell { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .public-hero-copy, .public-hero-art, .public-float-card { animation: none !important; }
 }
+
+
+/* Compact, legible mobile navigation with visible group labels. */
+@media (max-width: 700px) {
+  .sidebar { gap: 0; }
+  .brand { margin-bottom: 5px; }
+  .nav-label, .nav-label-spaced { display: flex; min-height: 23px; padding: 7px 4px 5px; font-size: 8px; }
+  .nav-label::before { width: 9px; }
+  .nav-list { display: flex; width: 100%; gap: 6px; padding: 0 0 5px; overflow-x: auto; overscroll-behavior-x: contain; }
+  .nav-list + .nav-list { margin-top: 0; }
+  .nav-item { min-height: 38px; padding: 0 10px; border-radius: 8px; font-size: 10px; }
+  .nav-icon { width: 24px; height: 24px; flex-basis: 24px; font-size: 13px; }
+  .nav-item.active { box-shadow: inset 0 -2px var(--gold); }
+}
+@media (max-width: 420px) {
+  .public-hero-actions { align-items: stretch; flex-direction: column; }
+  .public-login-button { width: 100%; }
+  .public-access-note { text-align: center; }
+  .page-heading { flex-direction: column; }
+  .heading-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .heading-actions .button { min-width: 0; width: 100%; }
+}
