@@ -2819,9 +2819,11 @@
           checkForDeployment();
         }).catch((error) => notify(`Offline cache could not be enabled: ${error.message}`, true));
       }
+      // Resolve backend configuration and authentication before rendering any workspace page.
+      // This prevents cached student or borrowing records from entering the public DOM on first load.
+      await connectSupabase();
       const initialPage = location.hash.slice(1);
       navigate(PAGE_NAMES[initialPage] ? initialPage : "dashboard");
-      await connectSupabase();
     } catch (error) {
       content.innerHTML = `<section class="panel panel-empty"><strong>Could not start the KBMS workspace</strong><p>${escapeHtml(error.message || "Check this browser's storage settings.")}</p></section>`;
       setSyncStatus("error", "Workspace unavailable");
