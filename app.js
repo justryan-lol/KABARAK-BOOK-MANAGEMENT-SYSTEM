@@ -3293,7 +3293,7 @@
       await connectSupabase();
       try {
         const savedSidebarState = localStorage.getItem("kbms-sidebar-collapsed");
-        state.sidebarCollapsed = savedSidebarState === null ? window.matchMedia("(max-width: 1280px)").matches : savedSidebarState === "1";
+        state.sidebarCollapsed = window.innerWidth <= 1280 || savedSidebarState === "1";
       } catch { state.sidebarCollapsed = window.innerWidth <= 1280; }
       setSidebarCollapsed(state.sidebarCollapsed);
       document.querySelectorAll(".nav-item[data-page]").forEach((item) => { item.title = item.textContent.trim(); item.setAttribute("aria-label", item.textContent.trim()); });
