@@ -1446,7 +1446,7 @@
     const visibleStaff = staff.filter((person) => !staffQuery || [person.display_name, person.staff_code, person.role, person.role_label].some((value) => String(value || "").toLowerCase().includes(staffQuery)));
     const classMap = new Map(classes.map((item) => [item.id, item]));
     const subjectMap = new Map(subjects.map((item) => [item.id, item]));
-    content.innerHTML = `${heading("SCHOOL ADMINISTRATION", "Staff & approvals", "Preview teacher assignments, staff roles and approval history using fictional demonstration records.", `<button class="button button-secondary" data-action="demo-request-approval">New approval request</button>`)}
+    content.innerHTML = `${heading("SCHOOL ADMINISTRATION", "Staff & approvals", "Preview teacher assignments, staff roles and approval history using fictional demonstration records.", `<div class="heading-actions"><button class="button button-secondary" data-action="demo-add-staff">Add demo staff</button><button class="button button-secondary" data-action="demo-add-subject">Add subject</button><button class="button button-primary" data-action="demo-request-approval">New approval request</button></div>`)}
       <section class="panel demo-warning"><div class="panel-body"><strong>Demonstration only — not staff authentication</strong><p>These sample staff profiles and decisions are stored only in this browser. They do not create accounts, enforce permissions or authorize real school transactions.</p></div></section>
       <section class="stats-grid">${statCard("DEMO STAFF", staff.length, "Fictional staff profiles")}${statCard("ACTIVE ASSIGNMENTS", assignments.filter((item) => item.active !== false).length, "Class and subject links")}${statCard("PENDING APPROVALS", approvals.filter((item) => item.status === "pending").length, "Awaiting a demo decision")}${statCard("AUDIT EVENTS", audits.length, "Local workflow history")}</section>
       <section class="panel"><div class="panel-header"><div><h2>Staff directory</h2><p>${visibleStaff.length} of ${staff.length} fictional staff profiles</p></div><div class="search-wrap"><input class="search-input" id="governance-staff-search" type="search" value="${escapeHtml(state.governanceQuery)}" placeholder="Search staff name, code or role"></div></div><div class="table-wrap"><table><thead><tr><th>Staff code</th><th>Name</th><th>Role</th><th>Status</th></tr></thead><tbody>${visibleStaff.length ? visibleStaff.map((person) => `<tr data-staff-search="${escapeHtml(`${person.display_name} ${person.staff_code || ""} ${person.role} ${person.role_label || ""}`.toLowerCase())}"><td class="code-text">${escapeHtml(person.staff_code || "—")}</td><td><strong>${escapeHtml(person.display_name)}</strong></td><td>${escapeHtml(person.role_label || person.role)}</td><td><span class="status-tag ${person.active === false ? "danger" : "good"}">${person.active === false ? "Inactive" : "Active"}</span></td></tr>`).join("") : `<tr><td colspan="4" class="table-empty">No demonstration staff profiles loaded.</td></tr>`}</tbody></table></div></section>
@@ -1851,6 +1851,41 @@
       notify(decision === "rejected" ? "Request rejected. The reason has been recorded." : "Request approved. The reason has been recorded.");
       await refresh();
     }, "PRINCIPAL APPROVAL");
+  }
+
+
+  async function addDemoStaff() {
+    if (state.syncConfig) return;
+    const fields = [
+      formField("Staff number", "staff_code", { maxLength: 40, placeholder: "STF-DEMO-06" }),
+      formField("Full name", "display_name", { maxLength: 120 }),
+      formField("Role", "role", { choices: [["principal", "Chief Principal"], ["library_admin", "Library Administrator"], ["bookstore_admin", "Bookstore Administrator"], ["class_teacher", "Class Teacher"], ["subject_teacher", "Subject Teacher"], ["librarian", "Librarian"], ["bookstore_assistant", "Bookstore Assistant"]] }),
+    ].join("");
+    showForm("Add demonstration staff profile", fields, "Add staff profile", async (form) => {
+      const staffCode = String(form.get("staff_code")).trim();
+      const displayName = String(form.get("display_name")).trim();
+      const role = String(form.get("role"));
+      if (!staffCode || displayName.length < 2) throw new Error("Enter a staff number and full name.");
+      const staff = await getAll("staff_profiles");
+      if (staff.some((item) => String(item.staff_code || "").toLowerCase() === staffCode.toLowerCase())) throw new Error("That staff number is already in use.");
+      const roleLabels = { principal: "Chief Principal", library_admin: "Library Administrator", bookstore_admin: "Bookstore Administrator", class_teacher: "Class Teacher", subject_teacher: "Subject Teacher", librarian: "Librarian", bookstore_assistant: "Bookstore Assistant" };
+      await writeRecord("staff_profiles", { id: crypto.randomUUID(), staff_code: staffCode, display_name: displayName, role, role_label: roleLabels[role] || role, active: true, demo_record: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+      await refresh();
+    }, "DEMO STAFF · LOCAL ONLY");
+  }
+
+  async function addDemoSubject() {
+    if (state.syncConfig) return;
+    const fields = [formField("Subject code", "subject_code", { maxLength: 40, placeholder: "MAT" }), formField("Subject name", "subject_name", { maxLength: 100, placeholder: "Mathematics" })].join("");
+    showForm("Add demonstration subject", fields, "Save subject", async (form) => {
+      const code = String(form.get("subject_code")).trim().toUpperCase();
+      const name = String(form.get("subject_name")).trim();
+      if (!code || !name) throw new Error("Enter both a subject code and subject name.");
+      const subjects = await getAll("school_subjects");
+      if (subjects.some((item) => String(item.subject_code || "").toUpperCase() === code || String(item.name || item.subject_name || "").toLowerCase() === name.toLowerCase())) throw new Error("That subject code or name already exists.");
+      await writeRecord("school_subjects", { id: crypto.randomUUID(), subject_code: code, subject_name: name, name, active: true, demo_record: true, created_at: new Date().toISOString() });
+      await refresh();
+    }, "DEMO SUBJECT DIRECTORY");
   }
 
   async function addDemoAssignment() {
@@ -2884,6 +2919,8 @@
     if (target.dataset.staffAction && state.syncConfig) await connectedStaffAction(target.dataset.staffAction, target.dataset.userId);
     if (target.dataset.approvalId && state.syncConfig) await decideConnectedApproval(target.dataset.approvalId, target.dataset.decision);
     if (target.dataset.action === "demo-add-assignment" && !state.syncConfig) await addDemoAssignment();
+    if (target.dataset.action === "demo-add-staff" && !state.syncConfig) await addDemoStaff();
+    if (target.dataset.action === "demo-add-subject" && !state.syncConfig) await addDemoSubject();
     if (target.dataset.action === "demo-request-approval" && !state.syncConfig) await createDemoApprovalRequest();
     if (target.dataset.endDemoAssignment && !state.syncConfig) await endDemoAssignment(target.dataset.endDemoAssignment);
     if (target.dataset.decideDemoApproval && !state.syncConfig) await decideDemoApproval(target.dataset.decideDemoApproval, target.dataset.decision);
