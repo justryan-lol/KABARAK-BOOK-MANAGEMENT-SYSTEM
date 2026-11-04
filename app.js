@@ -773,10 +773,11 @@
       throw new Error("This workspace already contains records. Demo data was not added to avoid mixing it with other records.");
     }
     const now = new Date().toISOString();
+    const demoClassNames = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa", "Lambda", "Mu", "Nu", "Xi", "Omicron", "Pi"];
     const makeStudent = (admission, fullName, house, section, classNumber = 1) => ({
       id: crypto.randomUUID(), admission_number: admission, full_name: fullName,
       house_code: `${house}${section}`, house, school_section: section,
-      current_class: ["Grade 10 Delta", "Grade 10 Alpha", "Grade 10 Beta", "Grade 10 Gamma"][classNumber - 1], active: true,
+      current_class: `Grade 10 ${demoClassNames[classNumber - 1]}`, active: true,
       grade: "Grade 10", class_number: classNumber, academic_status: "active",
       created_at: now, updated_at: now,
     });
@@ -797,7 +798,7 @@
       const surname = surnames[Math.floor(index / firstNames.length)];
       const house = houseCodes[index % houseCodes.length];
       const section = Math.floor(index / 4) % 2 === 0 ? "G" : "B";
-      const classNumber = (Math.floor(index / 8) % 4) + 1;
+      const classNumber = (Math.floor(index / 4) % 16) + 1;
       return makeStudent(
         `DEMO-${String(1001 + index)}`,
         `${firstName} ${surname}`,
@@ -912,10 +913,11 @@
     await writeRecords("staff_profiles", demoStaff);
     const demoYearId = crypto.randomUUID();
     const demoYear = { id: demoYearId, year_label: String(new Date().getFullYear()), starts_on: `${new Date().getFullYear()}-01-01`, ends_on: `${new Date().getFullYear()}-12-31`, is_current: true, status: "active", archived_at: null, created_at: now };
-    const demoClasses = ["Delta", "Alpha", "Beta", "Gamma"].map((label) => ({
+    const demoClasses = demoClassNames.map((label, index) => ({
       id: crypto.randomUUID(), academic_year_id: demoYearId, class_code: `G10-${label.toUpperCase()}`,
       display_name: `Grade 10 ${label}`, grade: "Grade 10", grade_label: "Grade 10",
-      class_label: `Grade 10 ${label}`, active: true, archived_at: null, created_at: now,
+      class_label: `Grade 10 ${label}`, school_section: index % 2 === 0 ? "G" : "B",
+      active: true, archived_at: null, created_at: now,
     }));
     const demoSubjects = demoBookTitles.map(([name]) => ({ id: crypto.randomUUID(), name, active: true, created_at: now }));
     await writeRecord("academic_years", demoYear);
