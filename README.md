@@ -16,11 +16,11 @@ The local server is bound to this computer only. Data is stored in this browser 
 
 ## Prepared fictional scenario
 
-- Eight fictional Grade 10 students across Tana, Athi, Nzoia and Mara and both school sections.
-- Four individually coded library copies.
-- Eight individually coded textbook copies.
+- 1,000 fictional Grade 10 students distributed across Tana, Athi, Nzoia and Mara houses, both school sections and four class groups.
+- Four individually coded library copies, kept separate from the bookstore register.
+- 13 distinct textbook titles with 80 individually coded copies per title (1,040 physical textbook copies).
+- 750 active textbook allocations across the 13 titles, each linked to a unique student and physical copy.
 - Two active library loans, including one overdue loan showing the KSh 5-per-calendar-day estimate.
-- Two textbook allocations with year-end return dates.
 - Separate library and bookstore clearance history for one student.
 - Five fictional staff profiles, two teacher assignments and one pending approval request.
 
