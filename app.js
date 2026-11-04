@@ -3032,6 +3032,20 @@
     try { localStorage.setItem("kbms-sidebar-collapsed-v2", state.sidebarCollapsed ? "1" : "0"); } catch {}
   }
 
+  function setMobileNavOpen(open) {
+    const shell = byId("app-shell");
+    const toggle = byId("mobile-nav-toggle");
+    const backdrop = byId("mobile-nav-backdrop");
+    const isOpen = Boolean(open) && window.innerWidth <= 700;
+    shell?.classList.toggle("mobile-nav-open", isOpen);
+    if (toggle) {
+      toggle.setAttribute("aria-expanded", String(isOpen));
+      toggle.setAttribute("aria-label", isOpen ? "Close navigation" : "Open navigation");
+    }
+    if (backdrop) backdrop.hidden = !isOpen;
+    document.body.classList.toggle("mobile-nav-visible", isOpen);
+  }
+
   async function searchGlobalRecords(rawQuery) {
     const panel = byId("global-search-results");
     const query = String(rawQuery || "").trim().toLowerCase();
@@ -3087,7 +3101,8 @@
 
   function navigate(page) {
     if (!PAGE_NAMES[page]) return;
-    if (state.page === page) return;
+    if (state.page === page) { setMobileNavOpen(false); return; }
+    setMobileNavOpen(false);
     state.page = page;
     state.pageTransitionRequested = true;
     byId("page-name").textContent = PAGE_NAMES[page];
@@ -3109,6 +3124,8 @@
       else { setPublicGate(false); await refresh(); }
     }
     if (target.dataset.action === "toggle-sidebar") setSidebarCollapsed(!state.sidebarCollapsed);
+    if (target.dataset.action === "mobile-nav-toggle") setMobileNavOpen(!byId("app-shell")?.classList.contains("mobile-nav-open"));
+    if (target.dataset.action === "mobile-nav-close") setMobileNavOpen(false);
     if (target.dataset.globalSearchKind) openGlobalSearchResult(target.dataset.globalSearchKind, target.dataset.globalSearchId);
     if (target.dataset.openClass) { state.selectedClassId = target.dataset.openClass; state.classRosterQuery = ""; navigate("class-roster"); }
     if (target.dataset.page) navigate(target.dataset.page);
@@ -3205,6 +3222,13 @@
       } else showAuthDialog();
     }
     if (target.id === "legal-close") byId("legal-dialog").close();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") setMobileNavOpen(false);
+  });
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 700) setMobileNavOpen(false);
   });
 
   window.addEventListener("online", () => {
