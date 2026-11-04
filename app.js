@@ -2990,7 +2990,7 @@
       toggle.setAttribute("aria-label", state.sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar");
       toggle.title = state.sidebarCollapsed ? "Expand navigation" : "Collapse navigation";
     }
-    try { localStorage.setItem("kbms-sidebar-collapsed", state.sidebarCollapsed ? "1" : "0"); } catch {}
+    try { localStorage.setItem("kbms-sidebar-collapsed-v2", state.sidebarCollapsed ? "1" : "0"); } catch {}
   }
 
   async function searchGlobalRecords(rawQuery) {
@@ -3292,8 +3292,8 @@
       // This prevents cached student or borrowing records from entering the public DOM on first load.
       await connectSupabase();
       try {
-        const savedSidebarState = localStorage.getItem("kbms-sidebar-collapsed");
-        state.sidebarCollapsed = window.innerWidth <= 1280 || savedSidebarState === "1";
+        const savedSidebarState = localStorage.getItem("kbms-sidebar-collapsed-v2");
+        state.sidebarCollapsed = window.innerWidth <= 1280 || (savedSidebarState === null && state.demoMode) || savedSidebarState === "1";
       } catch { state.sidebarCollapsed = window.innerWidth <= 1280; }
       setSidebarCollapsed(state.sidebarCollapsed);
       document.querySelectorAll(".nav-item[data-page]").forEach((item) => { item.title = item.textContent.trim(); item.setAttribute("aria-label", item.textContent.trim()); });
