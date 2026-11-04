@@ -313,3 +313,10 @@ td small { color: var(--muted); font-size: 9px; }
 @media(max-width:620px){.demo-mode-label{display:none}.demo-steps{grid-template-columns:1fr}.demo-steps button{min-height:82px}}
 
 .demo-warning{border-color:#ead9a8;background:#fffaf0;margin-bottom:16px}.demo-warning .panel-body{padding:13px 17px}.demo-warning strong{color:#76551a;font-size:12px}.demo-warning p{margin:5px 0 0;color:var(--muted);font-size:10px;line-height:1.55}
+
+/* Clear, consistent inline feedback for invalid fields in KBMS dialogs. */
+.field input.kbms-invalid, .field select.kbms-invalid, .field textarea.kbms-invalid {
+  border-color: var(--red) !important;
+  background: #fff8f7;
+  box-shadow: 0 0 0 1px var(--red);
+}
