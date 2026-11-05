@@ -102,3 +102,13 @@ See `CLOUDFLARE-DEMO-DEPLOYMENT.md`. The project includes `wrangler.toml`, `_hea
 - Library and Bookstore copy-level issue/return actions; Library circulation applies KSh 5 per calendar day after the due date, while textbook allocations retain the academic-year return deadline without a late fee.
 - The demo includes additional active library loans and textbook allocations, returned transactions, a previous academic year with archived classes and roster snapshots, and a combined read-only lending history in Archives.
 - The demo migration runs once per demo browser database and does not connect to or modify the live school Supabase workspace.
+
+
+## Security hardening update (2026-11-05)
+
+- The one-time `kbms-bootstrap-admin` endpoint has been retired after the initial active super-administrator account was confirmed. It now requires a valid JWT at the platform gateway and returns HTTP 410; it cannot create another bootstrap account.
+- Continue provisioning, deactivating and resetting staff through the authenticated `kbms-staff-admin` workflow.
+- The current Supabase security advisor still reports leaked-password protection as disabled. Enable Supabase Auth leaked-password protection in the project's Auth password settings before a school pilot.
+- The security advisor reports public-schema SECURITY DEFINER functions executable by authenticated users. The exposed operational RPCs contain server-side role checks and transaction guards, but they still require negative authorization tests using separate accounts. Do not remove their execute grants without reviewing dependent RLS policies and application RPC calls.
+- The current development database has one active super-administrator membership, five student records, 143 audit events, and no library books, loans, textbook copies or allocations. The fictional 1,000-student / 13-title demonstration remains isolated in the browser-local `?demo=1` workspace.
+- Backup scheduling and a witnessed restore remain unverified operational tasks. Do not mark backup/recovery complete until an encrypted backup and a restore drill have both succeeded.
