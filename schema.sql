@@ -1810,6 +1810,8 @@ begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
     foreach table_name in array array[
       'academic_years',
+      'academic_rollovers',
+      'staff_memberships',
       'school_classes',
       'school_subjects',
       'staff_profiles',
@@ -1831,3 +1833,20 @@ begin
   end if;
 end;
 $$;
+
+
+-- Super administrators must be able to read the rollover audit record as well.
+drop policy if exists admin_read_rollovers on public.academic_rollovers;
+create policy admin_read_rollovers
+on public.academic_rollovers
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.staff_memberships m
+    where m.user_id = auth.uid()
+      and m.active
+      and m.role in ('admin', 'super_admin')
+  )
+);
