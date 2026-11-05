@@ -1121,15 +1121,21 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { width: 
   height: 14px;
   border: 1.5px solid currentColor;
   border-radius: 2px;
+  background: transparent;
 }
 .sidebar-toggle-icon::before {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 4px;
+  width: 0;
+  height: auto;
   border-left: 1px solid currentColor;
+  border-radius: 0;
+  background: transparent;
   content: "";
 }
+.sidebar-toggle-icon::after { display: none; }
 .sidebar-collapsed .sidebar-toggle { top: 8px; right: 6px; width: 28px; height: 28px; }
 .sidebar-collapsed .sidebar-brand-row .brand { justify-content: center; }
 .sidebar-collapsed .sidebar { padding-top: 22px; }
