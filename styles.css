@@ -1575,3 +1575,64 @@ body.auth-pending { overflow-x: clip; overflow-y: auto; }
   .public-workspace-bottom { flex-wrap: wrap; }
 }
 
+
+
+/* Presentation release: fixed, labelled navigation. No collapsible desktop sidebar. */
+.sidebar {
+  width: 252px !important;
+  padding: 18px 13px 14px !important;
+  border-right: 1px solid #e5e7eb !important;
+  background: #fff !important;
+  color: #242a31 !important;
+  box-shadow: 1px 0 0 rgb(20 30 40 / 2%) !important;
+  transition: none !important;
+  will-change: auto !important;
+}
+.main-area { margin-left: 252px !important; transition: none !important; }
+.sidebar-brand-row { justify-content: flex-start !important; min-height: 58px; margin-bottom: 13px; padding: 0 4px 12px; border-bottom: 1px solid #e5e7eb; }
+.sidebar .brand { min-height: 48px; gap: 10px; padding: 0; color: #242a31; }
+.sidebar .brand-copy { display: grid !important; gap: 3px; }
+.sidebar .brand-copy strong { color: #252b33; font: 750 12px/1.2 Inter, "Segoe UI", Arial, sans-serif; letter-spacing: .11em; }
+.sidebar .brand-copy small { color: #8a6b36; font-size: 8px; letter-spacing: .1em; }
+.sidebar .sidebar-toggle { display: none !important; }
+.sidebar .nav-label { display: flex !important; align-items: center; gap: 8px; padding: 16px 10px 7px; color: #818a95; font-size: 9px; font-weight: 750; letter-spacing: .09em; }
+.sidebar .nav-label::before { width: 3px; height: 3px; border-radius: 50%; background: #c49a50; content: ""; }
+.sidebar .nav-list { display: grid !important; gap: 2px; overflow: visible; }
+.sidebar .nav-item { display: flex !important; width: 100%; min-height: 37px; justify-content: flex-start !important; gap: 10px !important; padding: 0 10px !important; border: 0; border-radius: 5px; color: #424b55; font-size: 11px !important; font-weight: 550; }
+.sidebar .nav-item:hover { background: #f4f5f6; color: #1f252c; }
+.sidebar .nav-item.active { border: 0; background: #f1f2f3; color: #20262d; box-shadow: inset 3px 0 #c49a50; font-weight: 700; }
+.sidebar .nav-icon { width: 18px !important; color: #747e89; font-size: 15px !important; }
+.sidebar .nav-item.active .nav-icon { color: #9b773d; }
+.sidebar .sidebar-bottom { display: block !important; margin-top: auto; padding-top: 14px; }
+.sidebar .workspace-label { display: grid !important; gap: 5px; margin: 0 1px 10px; padding: 12px 9px; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
+.sidebar .workspace-label span, .sidebar .workspace-label small { color: #7c8792; font-size: 8px; letter-spacing: .08em; }
+.sidebar .workspace-label strong { color: #775b2f; font: 700 11px Georgia, serif; }
+.sidebar .legal-link { display: flex !important; min-height: 29px; color: #69727d; font-size: 10px !important; }
+.sidebar .user-chip { display: flex !important; gap: 9px; margin-top: 9px; padding: 10px 7px 2px; border-top: 1px solid #e5e7eb; }
+.sidebar .user-chip > span:nth-child(2) { display: grid !important; }
+.sidebar .user-chip .text-button { display: inline-flex !important; }
+.sidebar-collapsed .sidebar, .sidebar-collapsed .main-area { width: auto !important; }
+@media (min-width: 701px) {
+  .sidebar { position: fixed; inset: 0 auto 0 0; }
+  .main-area { width: calc(100% - 252px); min-width: 0; }
+}
+@media (max-width: 1280px) and (min-width: 701px) {
+  .sidebar { width: 252px !important; padding: 18px 13px 14px !important; }
+  .main-area { margin-left: 252px !important; }
+  .sidebar .brand-copy, .sidebar .nav-label, .sidebar .workspace-label, .sidebar .sidebar-bottom .legal-link,
+  .sidebar .user-chip > span:nth-child(2), .sidebar .user-chip .text-button { display: revert !important; }
+  .sidebar .nav-item { justify-content: flex-start !important; gap: 10px !important; padding: 0 10px !important; font-size: 11px !important; }
+  .sidebar .nav-icon { width: 18px !important; font-size: 15px !important; }
+  .sidebar .user-chip { justify-content: flex-start !important; }
+}
+@media (max-width: 700px) {
+  .sidebar { width: min(310px, 86vw) !important; padding: 15px 13px 16px !important; }
+  .sidebar .brand-copy, .sidebar .nav-label, .sidebar .workspace-label, .sidebar .sidebar-bottom .legal-link,
+  .sidebar .user-chip > span:nth-child(2), .sidebar .user-chip .text-button { display: revert !important; }
+  .sidebar .nav-list { display: grid !important; }
+  .sidebar .nav-item { justify-content: flex-start !important; gap: 10px !important; padding: 0 10px !important; font-size: 11px !important; }
+  .sidebar .nav-icon { width: 18px !important; font-size: 15px !important; }
+  .sidebar .user-chip { justify-content: flex-start !important; }
+  .main-area { width: 100%; margin-left: 0 !important; }
+}
+@media (prefers-reduced-motion: reduce) { .sidebar, .main-area { transition: none !important; } }
