@@ -26,7 +26,7 @@
   ]);
   const state = {
     page: "dashboard", db: null, supabase: null, session: null, staffRole: null, offlineAuthorization: null, syncConfig: null, sessionTask: null, channel: null,
-    selectedClassId: "", classRosterQuery: "", governanceQuery: "", globalSearchTask: 0, sidebarCollapsed: false, demoMode: DEMO_MODE,
+    selectedClassId: "", classRosterQuery: "", governanceQuery: "", globalSearchTask: 0, demoMode: DEMO_MODE,
     inventoryQuery: "", studentQuery: "", bookstoreReturnQuery: "", inventoryFilter: "all", inventoryView: "table", studentFilter: "all", textbookQuery: "",
     circulationMode: "issue", deferredInstall: null, syncing: false, remoteRefreshTimer: null, pageTransitionRequested: false,
   };
@@ -3066,19 +3066,6 @@
   }
 
 
-  function setSidebarCollapsed(collapsed) {
-    state.sidebarCollapsed = Boolean(collapsed);
-    const shell = byId("app-shell");
-    const toggle = byId("sidebar-toggle");
-    shell?.classList.toggle("sidebar-collapsed", state.sidebarCollapsed);
-    if (toggle) {
-      toggle.setAttribute("aria-expanded", String(!state.sidebarCollapsed));
-      toggle.setAttribute("aria-label", state.sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar");
-      toggle.title = state.sidebarCollapsed ? "Expand navigation" : "Collapse navigation";
-    }
-    try { localStorage.setItem("kbms-sidebar-collapsed-v2", state.sidebarCollapsed ? "1" : "0"); } catch {}
-  }
-
   function setMobileNavOpen(open) {
     const shell = byId("app-shell");
     const toggle = byId("mobile-nav-toggle");
@@ -3170,7 +3157,6 @@
       if (state.syncConfig) showAuthDialog();
       else { setPublicGate(false); await refresh(); }
     }
-    if (target.dataset.action === "toggle-sidebar") setSidebarCollapsed(!state.sidebarCollapsed);
     if (target.dataset.action === "mobile-nav-toggle") setMobileNavOpen(!byId("app-shell")?.classList.contains("mobile-nav-open"));
     if (target.dataset.action === "mobile-nav-close") setMobileNavOpen(false);
     if (target.dataset.globalSearchKind) openGlobalSearchResult(target.dataset.globalSearchKind, target.dataset.globalSearchId);
@@ -3401,11 +3387,6 @@
       // Resolve backend configuration and authentication before rendering any workspace page.
       // This prevents cached student or borrowing records from entering the public DOM on first load.
       await connectSupabase();
-      try {
-        const savedSidebarState = localStorage.getItem("kbms-sidebar-collapsed-v2");
-        state.sidebarCollapsed = window.innerWidth <= 1280 || (savedSidebarState === null && state.demoMode) || savedSidebarState === "1";
-      } catch { state.sidebarCollapsed = window.innerWidth <= 1280; }
-      setSidebarCollapsed(state.sidebarCollapsed);
       document.querySelectorAll(".nav-item[data-page]").forEach((item) => { item.title = item.textContent.trim(); item.setAttribute("aria-label", item.textContent.trim()); });
       if (!state.syncConfig) {
         const [students, books, copies, allocations] = await Promise.all([getAll("students"), getAll("books"), getAll("textbook_copies"), getAll("textbook_allocations")]);
