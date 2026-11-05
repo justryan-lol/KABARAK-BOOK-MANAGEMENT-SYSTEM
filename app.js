@@ -8,7 +8,7 @@
   const BOOK_CODE = /^[A-Z0-9][A-Z0-9._/-]{0,79}$/i;
   const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
   const DB_NAME = DEMO_MODE ? "mhsk-bookstore-demo" : "mhsk-bookstore";
-  const DB_VERSION = 9;
+  const DB_VERSION = 10;
   const PAGE_NAMES = {
     dashboard: "Overview", circulation: "Issue & return", inventory: "Library catalog",
     bookstore: "Textbook register", "bookstore-returns": "Bookstore returns", "year-setup": "Academic year setup", archives: "Archives", students: "Student register", reports: "Clearance & reports",
@@ -16,12 +16,12 @@
   };
   const SYNC_READ_TABLES = [
     "students", "books", "loans", "textbook_copies", "textbook_allocations", "clearance_records",
-    "academic_years", "school_classes", "school_subjects", "staff_profiles", "staff_assignments",
+    "academic_years", "academic_rollovers", "school_classes", "school_subjects", "staff_profiles", "staff_memberships", "staff_assignments",
     "approval_requests", "audit_events", "class_archive_students", "system_settings",
   ];
   const SERVER_TRANSACTION_TABLES = new Set(["loans", "textbook_allocations", "clearance_records"]);
   const SERVER_REFERENCE_TABLES = new Set([
-    "academic_years", "school_classes", "school_subjects", "staff_profiles", "staff_assignments",
+    "academic_years", "academic_rollovers", "school_classes", "school_subjects", "staff_profiles", "staff_memberships", "staff_assignments",
     "approval_requests", "audit_events", "class_archive_students", "system_settings",
   ]);
   const state = {
@@ -161,7 +161,7 @@
       request.onupgradeneeded = (event) => {
         const upgrade = request.transaction;
         const db = request.result;
-        for (const name of ["students", "books", "loans", "textbook_copies", "textbook_allocations", "clearance_records", "outbox", "device-auth", "staff_profiles", "staff_assignments", "approval_requests", "audit_events", "school_classes", "school_subjects", "academic_years", "class_archive_students", "system_settings"]) {
+        for (const name of ["students", "books", "loans", "textbook_copies", "textbook_allocations", "clearance_records", "outbox", "device-auth", "staff_profiles", "staff_memberships", "staff_assignments", "approval_requests", "audit_events", "school_classes", "school_subjects", "academic_years", "academic_rollovers", "class_archive_students", "system_settings"]) {
           if (!db.objectStoreNames.contains(name)) db.createObjectStore(name, { keyPath: "id" });
         }
         if (!db.objectStoreNames.contains("active-loans")) {
@@ -2799,6 +2799,12 @@
   function normalizeRemoteRecord(table, record) {
     if (table === "staff_profiles") {
       return { ...record, id: record.user_id, staff_code: record.staff_number || "" };
+    }
+    if (table === "staff_memberships") {
+      return { ...record, id: record.user_id };
+    }
+    if (table === "academic_rollovers") {
+      return { ...record, id: record.target_year };
     }
     if (table === "school_classes") {
       return { ...record, display_name: record.class_label || record.display_name, grade: record.grade_label || record.grade };
