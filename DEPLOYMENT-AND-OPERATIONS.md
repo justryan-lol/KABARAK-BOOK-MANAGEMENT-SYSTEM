@@ -1,6 +1,6 @@
 # KBMS deployment and operations pack
 
-This guide describes the code now included in the package. It is not authorization to deploy or enter real student records. The school must approve the hosting provider, data-processing terms, data location/transfers, retention, device controls and operating policies first.
+This guide describes the current KBMS deployment. The staff portal at `/` is connected to the configured Supabase development project; `/?demo=1` remains a separate browser-local demo. The connected project is not an approved school production database. Do not enter real student records until the school approves hosting, data-processing terms, data location/transfers, retention, device controls and operating policies.
 
 ## 1. Local demo
 
@@ -20,7 +20,7 @@ Extract `KBMS-Official-Demo.zip` and run `START-DEMO.bat` on Windows. The demo u
    ```
 
    `supabase/config.toml` deliberately disables JWT verification only for `kbms-username-login`, because it is the public credential-exchange endpoint. Supabase Auth still verifies the password and applies its password-token rate limits. The staff administration function requires a valid JWT and independently checks the caller's active administrator role.
-6. Configure `config.js` using `config.example.js` as the template. It contains only the HTTPS project URL and publishable/anon key.
+6. `config.js` is currently configured for the development Supabase project using only its HTTPS URL and publishable key. Keep service-role and secret keys out of the browser. For any new school-approved environment, replace these values with that project's URL and publishable key.
 7. Create the initial school-approved administrator account and bootstrap it using `bootstrap-first-super-admin.sql`. This one-time operation must be performed by the project owner after verifying the Auth user UUID. Replace the clearly marked UUID and display-name placeholders; never run the template unchanged.
 8. Sign in with the bootstrap username, provision a second administrator, verify the second account, and only then use the normal staff directory to provision other staff. Temporary passwords are shown once in the administrator's browser; deliver them privately and require the staff member to change them at first sign-in.
 9. Test all roles with separate accounts. Confirm teacher visibility is limited to assigned classes/subjects, and that librarian/bookstore/approver/admin actions are rejected by the server when unauthorized.
@@ -73,4 +73,4 @@ The multi-sheet Excel generator is also round-trip tested with `openpyxl` in the
 - Backup owner, encryption-key custodian, retention schedule and recovery objectives.
 - Deployment domain, HTTPS hosting, device access and production sign-off.
 
-Until those are supplied and the tests are passed against the school's own disposable environment, the official demo must remain fictional and local-only.
+Until those are supplied and the tests are passed against the school's own disposable environment, keep the connected backend as development-only and keep the public `?demo=1` scenario fictional and browser-local.
