@@ -14,6 +14,16 @@
     bookstore: "Textbook register", "bookstore-returns": "Bookstore returns", "year-setup": "Academic year setup", archives: "Archives", students: "Student register", reports: "Clearance & reports",
     governance: "Staff & approvals", "class-roster": "Class members",
   };
+  const SYNC_READ_TABLES = [
+    "students", "books", "loans", "textbook_copies", "textbook_allocations", "clearance_records",
+    "academic_years", "school_classes", "school_subjects", "staff_profiles", "staff_assignments",
+    "approval_requests", "audit_events", "class_archive_students", "system_settings",
+  ];
+  const SERVER_TRANSACTION_TABLES = new Set(["loans", "textbook_allocations", "clearance_records"]);
+  const SERVER_REFERENCE_TABLES = new Set([
+    "academic_years", "school_classes", "school_subjects", "staff_profiles", "staff_assignments",
+    "approval_requests", "audit_events", "class_archive_students", "system_settings",
+  ]);
   const state = {
     page: "dashboard", db: null, supabase: null, session: null, staffRole: null, offlineAuthorization: null, syncConfig: null, sessionTask: null, channel: null,
     selectedClassId: "", classRosterQuery: "", governanceQuery: "", globalSearchTask: 0, sidebarCollapsed: false, demoMode: DEMO_MODE,
@@ -340,7 +350,7 @@
 
   async function clearSyncedWorkspace() {
     if (!state.db) return;
-    for (const table of ["students", "books", "loans", "textbook_copies", "textbook_allocations", "clearance_records"]) {
+    for (const table of SYNC_READ_TABLES) {
       await replaceAll(table, []);
     }
     await new Promise((resolve, reject) => {
@@ -2745,9 +2755,9 @@
     const queuedIds = new Set(queued.map((item) => item.id));
     const assignmentScopedTeacher = ["teacher", "subject_teacher", "class_teacher"].includes(currentRole());
     let discardedUnconfirmedTransactions = 0;
-    for (const table of ["students", "books", "loans", "textbook_copies", "textbook_allocations", "clearance_records"]) {
+    for (const table of SYNC_READ_TABLES) {
       const data = await fetchRemoteTable(table);
-      if (["loans", "textbook_allocations", "clearance_records"].includes(table)) {
+      if (SERVER_TRANSACTION_TABLES.has(table)) {
         // Transaction history is server-authoritative. These actions require an online RPC;
         // never replay old/local queue entries as direct table writes.
         for (const item of queued.filter((entry) => entry.table === table)) {
@@ -2757,7 +2767,7 @@
         await replaceAll(table, data);
         continue;
       }
-      if (assignmentScopedTeacher) {
+      if (SERVER_REFERENCE_TABLES.has(table) || assignmentScopedTeacher) {
         await replaceAll(table, data);
         continue;
       }
@@ -2786,13 +2796,32 @@
     await refresh();
   }
 
+  function normalizeRemoteRecord(table, record) {
+    if (table === "staff_profiles") {
+      return { ...record, id: record.user_id, staff_code: record.staff_number || "" };
+    }
+    if (table === "school_classes") {
+      return { ...record, display_name: record.class_label || record.display_name, grade: record.grade_label || record.grade };
+    }
+    if (table === "school_subjects") {
+      return { ...record, name: record.subject_name || record.name || record.subject_code || "" };
+    }
+    if (table === "staff_assignments") {
+      return { ...record, staff_id: record.staff_user_id || record.staff_id };
+    }
+    if (table === "system_settings") {
+      return { ...record, id: record.setting_key, value: record.setting_value };
+    }
+    return record;
+  }
+
   async function fetchRemoteTable(table) {
     const pageSize = 500;
     const records = [];
     for (let offset = 0; ; offset += pageSize) {
       const { data, error } = await state.supabase.from(table).select("*").range(offset, offset + pageSize - 1);
       if (error) throw new Error(`Could not sync ${table}: ${error.message}`);
-      records.push(...data);
+      records.push(...data.map((record) => normalizeRemoteRecord(table, record)));
       if (data.length < pageSize) return records;
     }
   }
@@ -2845,7 +2874,7 @@
     if (!state.supabase || !state.session) return;
     if (state.channel) state.supabase.removeChannel(state.channel);
     const channel = state.supabase.channel("mhsk-bookstore-live");
-    for (const table of ["students", "books", "loans", "textbook_copies", "textbook_allocations", "clearance_records"]) {
+    for (const table of SYNC_READ_TABLES) {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, () => {
         window.clearTimeout(state.remoteRefreshTimer);
         state.remoteRefreshTimer = window.setTimeout(() => {
