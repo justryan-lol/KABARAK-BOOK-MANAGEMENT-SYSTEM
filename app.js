@@ -2979,6 +2979,7 @@
     button.disabled = true;
     button.textContent = "Signing in…";
     showSignInTransition();
+    let credentialsAccepted = false;
     try {
       if (!state.supabase) throw new Error("This installation has no Supabase configuration. Ask the administrator to configure bookstore/config.js.");
       const { data: loginData, error } = await state.supabase.functions.invoke("kbms-username-login", {
@@ -2999,13 +3000,24 @@
         access_token: loginData.access_token, refresh_token: loginData.refresh_token,
       });
       if (sessionError) throw sessionError;
+      credentialsAccepted = true;
       state.sessionTask = startSessionSync(authData.session);
       if (state.sessionTask) await state.sessionTask;
       byId("auth-dialog").close();
       form.reset();
       notify("Signed in. Synchronizing school records.");
     } catch (error) {
-      rejectAuth(error.message || "We couldn't sign you in. Check your connection and try again.", ["username", "password"]);
+      if (credentialsAccepted) {
+        rejectAuth(`Your credentials were accepted, but KBMS could not finish loading the shared workspace: ${error.message || "Synchronization failed."}`, []);
+      } else {
+        const status = error?.context?.status;
+        const message = status === 429
+          ? "Too many sign-in attempts. Wait a little before trying again."
+          : status >= 500
+            ? "The sign-in service is temporarily unavailable. Try again shortly."
+            : error.message || "We couldn't sign you in. Check your connection and try again.";
+        rejectAuth(message, ["username", "password"]);
+      }
     } finally {
       await hideSignInTransition();
       button.disabled = false;
