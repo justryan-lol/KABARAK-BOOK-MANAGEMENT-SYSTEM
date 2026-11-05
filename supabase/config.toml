@@ -3,3 +3,6 @@ verify_jwt = false
 
 [functions.kbms-staff-admin]
 verify_jwt = true
+
+[functions.kbms-bootstrap-admin]
+verify_jwt = true
