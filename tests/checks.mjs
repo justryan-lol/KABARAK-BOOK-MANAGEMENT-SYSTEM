@@ -34,10 +34,13 @@ assert.match(responsiveCss, /max-width:\s*360px/, "The layout needs a narrow-pho
 assert.match(responsiveCss, /max-width:\s*700px/, "The layout needs a mobile breakpoint.");
 assert.match(responsiveCss, /prefers-reduced-motion:\s*reduce/, "Responsive motion must respect reduced-motion preferences.");
 
-// The repository source HTML may be used without a service worker. Production
-// Pages output must add the refinement link directly after the base stylesheet.
+const responsiveStylesheetLink = '<link rel="stylesheet" href="./responsive.css">';
+assert.equal((html.match(/<link\b[^>]*href=["']\.\/responsive\.css["']/gi) || []).length, 1,
+  "Source HTML must link responsive.css exactly once for first-load visitors.");
+assert.ok(html.indexOf('<link rel="stylesheet" href="./styles.css">') < html.indexOf(responsiveStylesheetLink),
+  "Responsive styles should load after the base stylesheet.");
 assert.match(buildScript, /responsiveLink\s*=\s*'<link rel="stylesheet" href="\.\/responsive\.css">'/,
-  "The production build must add an explicit responsive stylesheet link.");
+  "The production build should preserve or inject the responsive stylesheet link.");
 assert.match(buildScript, /SUPABASE_URL:\?Set SUPABASE_URL/, "Builds must require an explicit backend URL, not silently use a project fallback.");
 assert.match(buildScript, /SUPABASE_ANON_KEY:\?Set SUPABASE_ANON_KEY/, "Builds must require an explicit publishable key.");
 assert.match(buildScript, /cp index\.html app\.js styles\.css responsive\.css/, "The build must package the responsive stylesheet.");
