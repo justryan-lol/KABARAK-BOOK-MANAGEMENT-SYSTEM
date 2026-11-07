@@ -241,3 +241,109 @@ button[aria-busy="true"]::after, .kbms-inline-spinner {
     transition-duration: .01ms !important;
   }
 }
+
+/* Navigation refresh: spacious rhythm, with every destination visible at once. */
+.sidebar {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  padding: clamp(12px, 2.2vh, 22px) 16px 12px;
+  scrollbar-width: none;
+}
+.sidebar::-webkit-scrollbar { display: none; }
+.sidebar-brand-row { flex: 0 0 auto; }
+.sidebar .brand {
+  min-height: clamp(56px, 8.5vh, 72px);
+  padding: 2px 8px 10px;
+  gap: 12px;
+}
+.sidebar .crest { width: 46px; height: 50px; }
+.sidebar .nav-label {
+  flex: 0 0 auto;
+  padding: clamp(8px, 1.35vh, 13px) 11px 6px;
+  font-size: 9px;
+}
+.sidebar .nav-label-spaced { padding-top: clamp(10px, 1.7vh, 16px); }
+.sidebar .nav-list { flex: 0 0 auto; gap: 4px; }
+.sidebar .nav-item {
+  min-height: clamp(35px, 5.1vh, 42px);
+  padding-inline: 12px;
+  gap: 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+.sidebar .nav-icon { flex-basis: 22px; font-size: 17px; }
+.sidebar-bottom {
+  flex: 0 0 auto;
+  margin-top: auto;
+  padding-top: clamp(8px, 1.5vh, 14px);
+}
+.sidebar .workspace-label {
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 9px 11px;
+}
+.sidebar .legal-link { min-height: 29px; }
+.sidebar .user-chip { min-height: 43px; margin-top: 6px; padding-top: 8px; }
+
+/* Short laptop windows and landscape tablets: preserve the whole nav without scrolling. */
+@media (max-height: 760px) {
+  .sidebar { padding-top: 10px; padding-bottom: 8px; }
+  .sidebar .brand { min-height: 50px; padding-bottom: 5px; }
+  .sidebar .crest { width: 39px; height: 42px; }
+  .sidebar .brand-copy { gap: 3px; }
+  .sidebar .brand-copy strong { font-size: 12px; }
+  .sidebar .brand-copy small { font-size: 8px; }
+  .sidebar .nav-label { padding-top: 7px; padding-bottom: 4px; font-size: 8px; }
+  .sidebar .nav-label-spaced { padding-top: 9px; }
+  .sidebar .nav-list { gap: 2px; }
+  .sidebar .nav-item { min-height: 31px; font-size: 11px; }
+  .sidebar .nav-icon { font-size: 15px; }
+  .sidebar-bottom { padding-top: 5px; }
+  .sidebar .workspace-label { display: none; }
+  .sidebar .legal-link { min-height: 25px; font-size: 10px; }
+  .sidebar .user-chip { min-height: 38px; margin-top: 4px; padding-top: 5px; }
+  .sidebar .user-avatar { width: 28px; height: 28px; }
+}
+@media (max-height: 570px) {
+  .sidebar { padding-top: 6px; padding-bottom: 5px; }
+  .sidebar .brand { min-height: 42px; }
+  .sidebar .crest { width: 32px; height: 35px; }
+  .sidebar .nav-label { padding-top: 5px; padding-bottom: 3px; }
+  .sidebar .nav-label-spaced { padding-top: 6px; }
+  .sidebar .nav-list { gap: 1px; }
+  .sidebar .nav-item { min-height: 27px; padding-inline: 9px; font-size: 10px; }
+  .sidebar .nav-icon { flex-basis: 19px; font-size: 14px; }
+  .sidebar .legal-link { min-height: 22px; }
+  .sidebar .user-chip { min-height: 32px; }
+  .sidebar .user-avatar { width: 24px; height: 24px; }
+}
+
+/* The mobile drawer is also a single, non-scrolling navigation surface. */
+@media (max-width: 700px) {
+  .sidebar {
+    width: min(320px, 88vw);
+    max-height: 100dvh;
+    padding: 12px 14px 10px;
+    overflow: hidden;
+  }
+  .sidebar .brand { min-height: 52px; }
+  .sidebar .nav-item { min-height: 34px; }
+}
+@media (max-width: 700px) and (max-height: 700px) {
+  .sidebar { padding-top: 7px; padding-bottom: 6px; }
+  .sidebar .brand { min-height: 42px; }
+  .sidebar .crest { width: 34px; height: 36px; }
+  .sidebar .nav-label { padding-top: 5px; padding-bottom: 3px; }
+  .sidebar .nav-label-spaced { padding-top: 7px; }
+  .sidebar .nav-list { gap: 1px; }
+  .sidebar .nav-item { min-height: 28px; font-size: 10px; }
+  .sidebar .workspace-label { display: none; }
+  .sidebar .legal-link { min-height: 23px; }
+  .sidebar .user-chip { min-height: 34px; margin-top: 3px; padding-top: 4px; }
+}
