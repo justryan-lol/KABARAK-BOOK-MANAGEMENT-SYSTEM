@@ -1,0 +1,48 @@
+name: KBMS checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-and-build:
+    name: Static checks and Cloudflare Pages build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check app.js
+          node --check config.js
+          node --check sw.js
+
+      - name: Run KBMS regression checks
+        run: node tests/checks.mjs
+
+      - name: Check build script syntax
+        run: bash -n scripts/build-cloudflare.sh
+
+      - name: Build Pages output without production credentials
+        env:
+          SUPABASE_URL: https://kbms-ci-validation.supabase.co
+          SUPABASE_ANON_KEY: ci-placeholder-not-a-real-key
+        run: |
+          bash scripts/build-cloudflare.sh
+          test -f dist/index.html
+          test -f dist/responsive.css
+          test -f dist/sw.js
+          test -f dist/config.js
+          grep -Fq '<link rel="stylesheet" href="./responsive.css">' dist/index.html
