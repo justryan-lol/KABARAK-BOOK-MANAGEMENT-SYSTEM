@@ -1,52 +1,44 @@
 # KBMS online teacher demo — Cloudflare Pages plan
 
-This package is prepared for a **fictional-data demo only**. It is not deployed, and it must not be connected to the school's production database.
+This package describes a **fictional-data demo only**. A shared demo is not provisioned by this repository change and must not connect to the school's staff/production database.
 
 ## Architecture
 
 - Cloudflare Pages serves the static KBMS application over HTTPS.
-- A separate Supabase project named for the demo holds fictional demo records and demo-only staff accounts.
-- The Supabase publishable/anon key is public by design; database Row Level Security (RLS) and server-side RPC authorization remain mandatory. Never place a Supabase service-role key in this site.
-- Production school data must use a different Supabase project and a separately controlled deployment.
+- A separate, owner-approved Supabase project holds fictional demo records and demo-only staff accounts.
+- The Supabase publishable/anon key is public by design; database RLS and server-side RPC authorization remain mandatory. Never put a Supabase service-role key in the site.
+- Staff and demo deployments must use different Supabase projects and separately controlled Pages build environments.
+- The current `/?demo=1` experience is browser-local IndexedDB, not a multi-device shared backend.
 
-## One-time setup
+## Build and environment
 
-1. Create a **new demo-only Supabase project**. Do not reuse any school production project.
-2. Apply `schema.sql` to that demo project and run `tests/postgres-smoke-test.sql`. Deploy the username login and staff-admin Edge Functions as described in `DEPLOYMENT-AND-OPERATIONS.md`.
-3. Create fictional demo users and records only. Configure RLS and test each demo role before sharing the URL.
-4. Put this project in a private GitHub repository. Do not upload credentials, database dumps, student data, service-role keys or backup encryption keys.
-5. In Cloudflare, open **Workers & Pages → Create application → Pages → Connect to Git** and select the private repository.
-6. Set the production branch to `main`, build command to `bash scripts/build-cloudflare.sh`, and build output directory to `dist`.
-7. Add these build environment variables to both Preview and Production, pointing **only to the demo project**:
-   - `SUPABASE_URL` — the demo project's HTTPS URL.
-   - `SUPABASE_ANON_KEY` — the demo project's publishable/anon key.
-8. Deploy. Cloudflare supplies a `*.pages.dev` address. Send that link and each invited reviewer their own demo username and temporary password.
+Configure Cloudflare Pages with build command `bash scripts/build-cloudflare.sh` and output directory `dist`. Set both variables in Preview and Production, pointing only to the intended deployment backend:
 
-Cloudflare Pages Git integration automatically builds deployments when changes are pushed. It also supports preview deployments for branches. Keep preview and production environment variables pointed at the demo backend, never at the real school database.
+- `SUPABASE_URL` — an HTTPS Supabase project URL.
+- `SUPABASE_ANON_KEY` — that project's publishable/anon key.
 
-## Build locally before publishing
+The build now fails if either value is missing; it does not fall back to the repository's configured development project. The script copies `responsive.css` and adds its stylesheet link to the generated `dist/index.html`, so responsive rules load for first-time visitors before a service worker is installed. `sw.js` precaches the separate stylesheet for later offline use.
 
-On a machine with Bash and Node.js, set the two demo environment variables and run:
+Locally:
 
 ```bash
-export SUPABASE_URL='https://YOUR-DEMO-PROJECT.supabase.co'
-export SUPABASE_ANON_KEY='YOUR-DEMO-PUBLISHABLE-OR-ANON-KEY'
+export SUPABASE_URL='https://YOUR-APPROVED-PROJECT.supabase.co'
+export SUPABASE_ANON_KEY='YOUR-PUBLISHABLE-OR-ANON-KEY'
 bash scripts/build-cloudflare.sh
 ```
 
-The deployable static site is generated in `dist/`. The build script deliberately refuses to build if either demo setting is missing. It copies only runtime assets into `dist/`, not SQL, scripts, docs, tests, or backup utilities.
+Review the generated `dist/config.js` target before deployment. `config.js` contains public runtime configuration only. Supabase service-role/secret keys must be set as Supabase Edge Function secrets, never as Pages client variables.
 
-## Before sharing the demo
+## Shared demo requirements
 
-- Test teacher-reviewer and administrator demo accounts independently.
-- Confirm the teacher reviewer has near-full permissions only inside the demo project.
-- Confirm the demo database contains invented records only.
-- Confirm sign-in, imports, class setup, archive flow, library issue/return, bookstore issue/return, exports and feedback work.
-- Enable strong passwords and account rate limits; give every reviewer an individual account.
-- Decide how demo resets are performed and retain an audit trail of reviewer actions.
+A shared reviewer experience requires a separate demo project, fictional-only seed data, role-tested RLS, demo-specific accounts, audited account lifecycle operations, rate limits and an approved reset/retention procedure. The existing normal staff account administration can be reused inside that isolated project. Do not provision demo users in the current staff project or point the public demo route at it.
 
-## Important limitations
+See `SHARED-DEMO-READINESS.md` for current IndexedDB behavior, account flow review and a staged migration/acceptance checklist. Project creation, schema deployment, seeding, account provisioning and deployment require owner approval and are not performed by this build script.
 
-This Cloudflare plan deploys the **front-end** only. Supabase remains the database, authentication and server-side transaction backend. Cloudflare Pages does not make the local browser database shared by itself. The online demo becomes multi-user only after its separate Supabase project, schema, RLS and Edge Functions are configured and verified.
+## Before sharing
 
-Cloudflare's current Pages documentation supports Git-connected deployments, build environment variables and preview deployments. Git integration is the recommended route for this maintained project; Cloudflare documents that a Git-integrated Pages project cannot later be switched to Direct Upload.
+- Verify the generated deployment's Supabase URL is the dedicated demo project.
+- Confirm all demo names and transactions are fictional.
+- Test each reviewer role, denied requests, password change/reset and deactivation.
+- Confirm account lifecycle audit coverage, strong-password settings, abuse controls and a demo reset process.
+- Test page assets, responsive styles, login and major school workflows in a browser.
