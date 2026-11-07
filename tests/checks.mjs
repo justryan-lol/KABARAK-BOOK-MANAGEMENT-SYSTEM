@@ -45,7 +45,7 @@ assert.match(buildScript, /SUPABASE_URL:\?Set SUPABASE_URL/, "Builds must requir
 assert.match(buildScript, /SUPABASE_ANON_KEY:\?Set SUPABASE_ANON_KEY/, "Builds must require an explicit publishable key.");
 assert.match(buildScript, /cp index\.html app\.js styles\.css responsive\.css/, "The build must package the responsive stylesheet.");
 assert.match(serviceWorker, /"\.\/responsive\.css"/, "The service worker must precache the responsive stylesheet.");
-assert.match(serviceWorker, /mhsk-kbms-v34/, "The service-worker cache must be bumped with the stylesheet delivery change.");
+assert.match(serviceWorker, /mhsk-kbms-v37/, "The service-worker cache must be bumped with the stylesheet delivery change.");
 assert.match(serviceWorker, /explicitlyLinked/, "The worker must avoid duplicate stylesheet injection in built output.");
 assert.ok(Array.isArray(manifest.icons) && manifest.icons.length > 0, "The installable app manifest needs an icon.");
 assert.match(config, /window\.BOOKSTORE_CONFIG\s*=/, "Runtime configuration must be initialized.");
