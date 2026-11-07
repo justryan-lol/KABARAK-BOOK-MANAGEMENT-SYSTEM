@@ -1,10 +1,11 @@
 "use strict";
 
-const CACHE_NAME = "mhsk-kbms-v32";
+const CACHE_NAME = "mhsk-kbms-v33";
 const APP_ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
+  "./responsive.css",
   "./app.js",
   "./xlsx-export.js",
   "./config.js",
@@ -47,13 +48,23 @@ self.addEventListener("fetch", (event) => {
   }
   const isAppCode = /\.(?:html|css|js)$/.test(url.pathname);
   if (isAppCode) {
-    // Always try the deployed version first; use the offline cache only if offline.
-    event.respondWith(fetch(request, { cache: "no-store" }).then((response) => {
-      if (response.ok) {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+    event.respondWith(fetch(request, { cache: "no-store" }).then(async (response) => {
+      if (!response.ok) return response;
+      let delivered = response;
+      if (url.pathname.endsWith("/styles.css")) {
+        // Keep the legacy stylesheet intact and layer responsive fixes on top.
+        const enhancementUrl = new URL("./responsive.css", self.location.href);
+        const enhancement = await fetch(enhancementUrl, { cache: "no-store" });
+        if (enhancement.ok) {
+          const headers = new Headers(response.headers);
+          headers.delete("content-length");
+          const combined = `${await response.text()}\n\n/* KBMS responsive.css */\n${await enhancement.text()}`;
+          delivered = new Response(combined, { status: response.status, statusText: response.statusText, headers });
+        }
       }
-      return response;
+      const copy = delivered.clone();
+      caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+      return delivered;
     }).catch(async () => (await caches.match(request)) || Response.error()));
     return;
   }

@@ -28,13 +28,18 @@ This is a development package, not a production deployment. See `TEST-RESULTS.md
 - Added a pre-import summary/confirmation and clarified the one-row-per-physical-copy rule.
 - Added regression checks for cancellation behavior and textbook bulk-import safeguards.
 
-
 ## 2026-11-01 — Academic-year archives and Cloudflare demo preparation
 
 - Added separate Bookstore **Academic year setup** and **Archives** screens.
-- Added named class/stream creation using form/grade + class name (e.g. Form 3 Delta); bookstore administrators can create classes in open academic years while year creation remains an administrator action.
+- Added named class/stream creation using form/grade + class name (e.g., `Form 3 Delta`) to an academic year; year creation remains an administrator responsibility.
 - Added protected academic-year archive RPC. It refuses to archive the current year, closes the selected year, deactivates its classes and records archive metadata without deleting student or transaction history.
-- Added immutable class roster snapshots for exact `current_class` matches; archive screen exposes archived rosters read-only. Students are not automatically marked graduated and clearances/outstanding items are not silently cleared.
+- Added immutable class roster snapshots for exact `current_class` matches; archive screen exposes archived rosters read-only. Students are not automatically marked graduated and clearances/outstanding books still require their own workflows.
 - Added local-demo academic-year setup and archive workflow.
 - Added Cloudflare Pages build configuration, security headers and a deployment guide for a separate fictional-data demo backend.
 - Bumped service-worker cache version.
+
+## 2026-11-07 — responsive layout and navigation refinement
+- Added a responsive refinement stylesheet for narrower desktop/tablet/mobile layouts, visible scrollbars, non-clipping tables and dialogs, and readable navigation.
+- Fixed the public introduction page to flow vertically instead of clipping its lower sections at one viewport height.
+- Updated the service worker to layer the responsive stylesheet over the existing design and precache it for offline use.
+- Updated Cloudflare Pages packaging and static regression assertions for the new asset. Browser and deployment acceptance testing remain required.

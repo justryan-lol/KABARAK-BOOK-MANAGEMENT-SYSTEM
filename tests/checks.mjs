@@ -8,6 +8,7 @@ const read = (file) => readFileSync(resolve(root, file), "utf8");
 const requiredFiles = [
   "index.html",
   "styles.css",
+  "responsive.css",
   "app.js",
   "config.js",
   "sw.js",
@@ -21,9 +22,11 @@ for (const file of requiredFiles) {
 
 const html = read("index.html");
 const css = read("styles.css");
+const responsiveCss = read("responsive.css");
 const app = read("app.js");
 const config = read("config.js");
 const serviceWorker = read("sw.js");
+const buildScript = read("scripts/build-cloudflare.sh");
 const manifest = JSON.parse(read("manifest.json"));
 
 assert.match(html, /<html\s+lang="en"/i, "The document should declare its language.");
@@ -32,7 +35,15 @@ assert.match(html, /id="mobile-nav-toggle"[^>]*aria-label=/, "The mobile navigat
 assert.match(html, /id="mobile-nav-backdrop"[^>]*aria-label=/, "The mobile navigation backdrop needs an accessible name.");
 assert.match(css, /:focus-visible/, "Keyboard focus indicators must remain available.");
 assert.match(css, /prefers-reduced-motion:\s*reduce/, "Reduced-motion preferences must be respected.");
-assert.match(css, /@media\s*\(max-width:/, "Responsive layout rules must be present.");
+assert.match(responsiveCss, /scrollbar-width:\s*thin/, "Scrollable regions must keep discoverable scrollbars.");
+assert.match(responsiveCss, /\.table-wrap[\s\S]*overflow:\s*auto/, "Tables must retain a scrollable overflow container.");
+assert.match(responsiveCss, /\.public-home[\s\S]*height:\s*auto\s*!important/, "The public homepage must not clip content below one viewport.");
+assert.match(responsiveCss, /max-width:\s*360px/, "The layout needs a narrow-phone breakpoint.");
+assert.match(responsiveCss, /max-width:\s*700px/, "The layout needs a mobile breakpoint.");
+assert.match(responsiveCss, /prefers-reduced-motion:\s*reduce/, "Responsive motion must respect reduced-motion preferences.");
+assert.match(serviceWorker, /responsive\.css/, "The service worker must load the responsive refinement stylesheet.");
+assert.match(serviceWorker, /mhsk-kbms-v33/, "The service-worker cache must be bumped when shipped assets change.");
+assert.match(buildScript, /responsive\.css/, "Cloudflare build output must include the responsive stylesheet.");
 assert.ok(Array.isArray(manifest.icons) && manifest.icons.length > 0, "The installable app manifest needs an icon.");
 assert.match(config, /window\.BOOKSTORE_CONFIG\s*=/, "The public runtime configuration must be initialized.");
 

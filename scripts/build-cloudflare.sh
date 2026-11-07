@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -15,7 +14,7 @@ esac
 rm -rf dist
 mkdir -p dist
 
-cp index.html app.js styles.css xlsx-export.js \
+cp index.html app.js styles.css responsive.css xlsx-export.js \
    manifest.json mhsk-crest.png sw.js dist/
 
 cp _headers dist/_headers

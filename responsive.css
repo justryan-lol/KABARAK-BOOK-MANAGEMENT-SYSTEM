@@ -1,0 +1,243 @@
+/* KBMS responsive and overflow refinement layer.
+   Loaded after styles.css by the service worker; keep the existing visual identity. */
+:root {
+  --kbms-content-gutter: clamp(16px, 3vw, 36px);
+  --kbms-panel-gap: clamp(12px, 1.8vw, 20px);
+  --kbms-scroll-thumb: #b7a5ad;
+}
+
+/* Restore discoverable native scrolling; the legacy global scrollbar reset hid it. */
+html, body, * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--kbms-scroll-thumb) transparent;
+}
+html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { width: 9px; height: 9px; }
+html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, *::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 9px;
+  background: var(--kbms-scroll-thumb);
+  background-clip: padding-box;
+}
+html::-webkit-scrollbar-track, body::-webkit-scrollbar-track, *::-webkit-scrollbar-track { background: transparent; }
+html, body { max-width: 100%; }
+body { overflow-x: clip; line-height: 1.5; }
+
+/* Keep flex/grid descendants shrinkable so long school names and labels wrap. */
+.main-area, .content-area, #app-content, .panel, .panel-body, .panel-header,
+.page-heading, .page-heading > div, .heading-actions, .toolbar, .inventory-toolbar,
+.global-search, .user-chip, .user-chip > span, .field, .form-fields { min-width: 0; }
+.content-area { width: 100%; max-width: 1440px; padding-inline: var(--kbms-content-gutter); }
+.page-heading { align-items: flex-start; flex-wrap: wrap; gap: 14px 22px; }
+.page-heading > div:first-child { flex: 1 1 300px; }
+.page-heading h1, .page-heading p, .panel-header h2, .panel-header p,
+.stat-label, .stat-note, .field > span, .inline-hint { overflow-wrap: anywhere; }
+.heading-actions { display: flex; flex: 0 1 auto; flex-wrap: wrap; gap: 8px; }
+.panel-header { flex-wrap: wrap; align-items: center; }
+.panel-header > div { min-width: min(100%, 220px); }
+.panel-header > .toolbar, .panel-header > .inventory-toolbar { flex: 1 1 260px; }
+.panel, .stat-card, .book-card, .house-card { overflow: visible; }
+.stat-card { min-width: 0; }
+.stat-number { overflow-wrap: anywhere; }
+
+/* Tables retain readable columns inside an explicitly scrollable region. */
+.table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--kbms-scroll-thumb) #f7f2ef;
+  border-radius: 0 0 10px 10px;
+}
+.table-wrap table { width: max-content; min-width: 100%; }
+.table-wrap th, .table-wrap td { max-width: 360px; white-space: normal; overflow-wrap: anywhere; vertical-align: top; }
+.table-wrap .code-text { overflow-wrap: anywhere; }
+.table-wrap .row-actions { flex-wrap: wrap; min-width: 112px; }
+
+/* Avoid nested horizontal overflow while retaining the sidebar's own scroll. */
+.sidebar { overscroll-behavior-y: contain; scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / 32%) transparent; }
+.sidebar .nav-list { min-width: 0; }
+.nav-item { min-width: 0; text-align: left; line-height: 1.35; overflow-wrap: anywhere; }
+.nav-icon { flex: 0 0 29px; }
+.sidebar-collapsed .nav-item { position: relative; }
+.sidebar-collapsed .nav-item:focus-visible { outline-offset: -2px; }
+.sidebar-collapsed .nav-item:hover::before,
+.sidebar-collapsed .nav-item:focus-visible::before {
+  position: absolute;
+  z-index: 10;
+  left: calc(100% + 10px);
+  width: max-content;
+  max-width: min(260px, 60vw);
+  padding: 8px 10px;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 7px;
+  background: var(--wine-deep);
+  color: #fff;
+  content: attr(aria-label);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: normal;
+  box-shadow: 0 5px 16px rgb(0 0 0 / 18%);
+  pointer-events: none;
+}
+
+/* Make the public introduction a real scrollable page instead of clipping below
+   the first viewport (the previous 100svh + overflow:hidden rules did that). */
+.public-home {
+  height: auto !important;
+  min-height: 100svh !important;
+  overflow: clip;
+  padding-bottom: 0;
+}
+.public-hero { flex: 0 0 auto; min-height: min(720px, calc(100svh - 156px)); }
+.public-capabilities, .public-proof-strip, .public-final-cta { position: relative; z-index: 1; }
+.public-capabilities { width: min(1240px, 100%); margin: 0 auto; padding: clamp(42px, 7vw, 88px) 0; }
+.public-section-heading { max-width: 620px; margin-bottom: 28px; }
+.public-section-heading h2, .public-final-cta h2 { overflow-wrap: anywhere; }
+.public-feature-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--kbms-panel-gap); }
+.public-feature-card { min-width: 0; padding: clamp(17px, 2vw, 24px); border: 1px solid var(--line); border-top: 2px solid var(--gold); border-radius: 10px; background: var(--surface); }
+.public-feature-card h3, .public-feature-card p { overflow-wrap: anywhere; }
+.public-proof-strip { display: flex; width: min(1240px, 100%); flex-wrap: wrap; align-items: center; gap: 14px clamp(20px, 4vw, 48px); margin: 0 auto; padding: 22px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.public-proof-strip > div { display: grid; gap: 3px; }
+.public-proof-strip strong { color: var(--wine); font: 700 24px Georgia, serif; }
+.public-proof-strip span, .public-proof-strip p { color: var(--muted); font-size: 12px; }
+.public-proof-strip p { flex: 1 1 220px; margin: 0; }
+.public-final-cta { display: flex; width: min(1240px, 100%); flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; margin: 0 auto; padding: clamp(38px, 6vw, 72px) 0; }
+.public-final-cta > div:first-child { min-width: 0; max-width: 680px; }
+.public-final-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+
+/* Dialog content remains reachable on short screens, zoomed text and phones. */
+.dialog {
+  width: min(600px, calc(100% - 24px));
+  max-height: min(90dvh, 820px);
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.dialog > form, .legal-dialog { min-width: 0; }
+.dialog-head > div { min-width: 0; }
+.dialog-head h2 { overflow-wrap: anywhere; }
+.form-fields { gap: 16px; }
+.field { align-content: start; line-height: 1.45; }
+.field > span { display: block; }
+.field input, .field select, .field textarea, .search-input, .filter-select { min-width: 0; max-width: 100%; }
+.dialog-actions { flex-wrap: wrap; }
+.dialog-actions .button { min-width: 120px; }
+.toast-region { width: min(420px, calc(100vw - 28px)); right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); }
+.toast { overflow-wrap: anywhere; }
+
+/* Reusable, restrained feedback styles for async controls and future skeletons. */
+button[aria-busy="true"] { position: relative; cursor: progress; }
+button[aria-busy="true"]::after, .kbms-inline-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: kbms-inline-spin 700ms linear infinite;
+  content: "";
+}
+[data-kbms-skeleton="true"] {
+  color: transparent !important;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #f1ece9 25%, #faf7f4 42%, #f1ece9 64%);
+  background-size: 300% 100%;
+  animation: kbms-skeleton 1.2s ease-in-out infinite;
+}
+@keyframes kbms-inline-spin { to { transform: rotate(360deg); } }
+@keyframes kbms-skeleton { to { background-position: -150% 0; } }
+
+@media (min-width: 701px) and (max-width: 1100px) {
+  .app-shell:not(.sidebar-collapsed) .sidebar { width: 250px !important; padding-inline: 15px !important; }
+  .app-shell:not(.sidebar-collapsed) .main-area { margin-left: 250px !important; }
+  .app-shell:not(.sidebar-collapsed) .sidebar .brand-copy,
+  .app-shell:not(.sidebar-collapsed) .sidebar .nav-label,
+  .app-shell:not(.sidebar-collapsed) .sidebar .workspace-label,
+  .app-shell:not(.sidebar-collapsed) .sidebar .user-chip > span:nth-child(2) { display: grid !important; }
+  .app-shell:not(.sidebar-collapsed) .sidebar .nav-label { display: flex !important; }
+  .app-shell:not(.sidebar-collapsed) .sidebar .nav-item { justify-content: flex-start !important; gap: 10px !important; font-size: 11px !important; }
+  .app-shell:not(.sidebar-collapsed) .sidebar .nav-icon { flex-basis: 26px; }
+  .content-area { padding-inline: clamp(16px, 2.4vw, 26px); }
+  .global-search { width: min(340px, 32vw); min-width: 150px; }
+  .public-feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .content-area { padding: 20px 15px 28px; }
+  .page-heading { gap: 12px; }
+  .page-heading > div:first-child { flex-basis: 100%; }
+  .page-heading p { max-width: none; }
+  .heading-actions { display: flex; width: 100%; }
+  .heading-actions .button { flex: 1 1 145px; min-width: 0; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .stat-card { min-height: 112px; padding: 14px; }
+  .stat-label { align-items: flex-start; }
+  .stat-note { line-height: 1.4; }
+  .overview-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .book-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .quick-entry, .circulation-entry { grid-template-columns: minmax(0, 1fr); }
+  .panel-header { align-items: flex-start; }
+  .panel-header > div { width: 100%; }
+  .panel-header > .button, .panel-header > .footer-link { flex: 0 1 auto; }
+  .toolbar { width: 100%; flex-wrap: wrap; }
+  .search-wrap { min-width: 0; flex: 1 1 100%; }
+  .inventory-toolbar, .inventory-toolbar > .toolbar { width: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .inventory-toolbar .search-wrap { flex: 1 1 100%; }
+  .table-wrap { margin-inline: 0; }
+  .table-wrap th, .table-wrap td { min-width: 92px; padding: 10px 11px; }
+  .table-wrap td:first-child, .table-wrap th:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); }
+  .table-wrap th:first-child { background: #faf6f4; }
+  .dialog { width: calc(100% - 20px); max-height: 92dvh; border-radius: 12px; }
+  .dialog > form, .legal-dialog { padding: 18px; }
+  .form-fields { grid-template-columns: minmax(0, 1fr); }
+  .form-fields .field, .form-fields .field:first-child, .form-fields .field.full { grid-column: 1; }
+  .public-home { padding-inline: 20px; }
+  .public-hero { min-height: 0; padding-block: 34px 26px; }
+  .public-feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .public-feature-card { padding: 16px; }
+  .public-proof-strip { gap: 14px 24px; }
+  .public-final-cta { align-items: flex-start; }
+  .public-final-actions { width: 100%; }
+}
+
+@media (max-width: 420px) {
+  .topbar { grid-template-columns: 40px minmax(0, 1fr); }
+  .topbar .breadcrumb { min-width: 0; }
+  .top-actions { grid-column: 2; justify-self: end; max-width: 100%; }
+  .global-search { order: 4; grid-column: 1 / -1; width: 100%; margin: 2px 0 0; }
+  .global-search-results { right: 0; left: 0; width: 100%; }
+  .stats-grid { gap: 8px; }
+  .stat-card { min-height: 104px; padding: 12px; }
+  .stat-number { font-size: clamp(22px, 7vw, 28px); }
+  .book-grid { grid-template-columns: minmax(0, 1fr); }
+  .house-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stream-row { grid-template-columns: minmax(72px, 1fr) minmax(55px, 2fr) 34px; }
+  .dialog-actions .button { flex: 1 1 100%; }
+  .public-feature-grid { grid-template-columns: minmax(0, 1fr); }
+  .public-proof-strip > div { flex: 1 1 120px; }
+  .public-final-actions { align-items: stretch; flex-direction: column; }
+  .public-final-actions > * { width: 100%; }
+}
+
+@media (max-width: 360px) {
+  .mobile-nav-toggle { width: 38px; height: 38px; }
+  .topbar { grid-template-columns: 38px minmax(0, 1fr); gap: 7px; padding-inline: 10px; }
+  .breadcrumb strong { font-size: 10px; overflow-wrap: anywhere; }
+  .content-area { padding-inline: 11px; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat-card { padding: 10px; }
+  .stat-label { font-size: 8px; letter-spacing: .04em; }
+  .public-home { padding-inline: 16px; }
+  .public-brand small { letter-spacing: .08em; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto !important; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
