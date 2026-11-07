@@ -347,3 +347,157 @@ button[aria-busy="true"]::after, .kbms-inline-spinner {
   .sidebar .legal-link { min-height: 23px; }
   .sidebar .user-chip { min-height: 34px; margin-top: 3px; padding-top: 4px; }
 }
+
+/* Spacious workspace system: apply the same rhythm to every signed-in page. */
+:root {
+  --kbms-page-space: clamp(24px, 3.1vw, 46px);
+  --kbms-section-space: clamp(22px, 2.5vw, 34px);
+  --kbms-panel-padding: clamp(20px, 2vw, 28px);
+  --kbms-control-height: 44px;
+  --kbms-table-row-space: 15px;
+}
+.content-area {
+  max-width: 1540px;
+  padding: clamp(28px, 3.2vw, 46px) var(--kbms-page-space) 48px;
+}
+.page-heading {
+  margin-bottom: var(--kbms-section-space);
+  gap: 20px 28px;
+}
+.page-heading h1 {
+  margin-top: 9px;
+  font-size: clamp(27px, 2.35vw, 36px);
+  line-height: 1.18;
+}
+.page-heading p {
+  max-width: 760px;
+  margin-top: 11px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.eyebrow { line-height: 1.5; }
+.heading-actions { gap: 10px; }
+.button { min-height: 42px; padding-inline: 17px; }
+.button-small { min-height: 34px; }
+.stats-grid {
+  gap: clamp(14px, 1.5vw, 20px);
+  margin-bottom: var(--kbms-section-space);
+}
+.stat-card {
+  min-height: 142px;
+  padding: 23px 22px;
+}
+.stat-number { margin-top: 20px; font-size: 34px; }
+.stat-note { margin-top: 7px; font-size: 10px; line-height: 1.5; }
+.overview-grid {
+  gap: clamp(18px, 2vw, 26px);
+}
+.quick-actions-panel { margin-bottom: 22px; }
+.quick-actions { gap: 10px; padding: 18px 22px; }
+.panel {
+  border-radius: 13px;
+  box-shadow: 0 10px 28px rgb(52 25 37 / 4%);
+}
+.panel-header {
+  gap: 16px;
+  padding: 21px var(--kbms-panel-padding);
+}
+.panel-header h2 { font-size: 16px; line-height: 1.35; }
+.panel-header p { margin-top: 7px; font-size: 11px; line-height: 1.55; }
+.panel-body { padding: var(--kbms-panel-padding); }
+.stream-list { gap: 18px; }
+.stream-row { gap: 15px; }
+.stream-name, .stream-count { font-size: 11px; }
+.quick-panel { margin-top: 22px; }
+.book-grid {
+  gap: 18px;
+  padding: 22px;
+}
+.book-card { gap: 14px; padding: 17px; }
+.book-cover, .book-cover-placeholder { height: 180px; }
+.book-card h3 { font-size: 16px; line-height: 1.45; }
+.book-description { font-size: 11px; line-height: 1.65; }
+.book-card dl { gap: 10px; }
+.book-card dl > div { padding-top: 10px; }
+.book-card dt, .book-card dd { font-size: 11px; }
+.quick-entry, .circulation-entry { gap: 16px; }
+.field { gap: 9px; }
+.field > span { font-size: 11px; line-height: 1.45; }
+.field input, .field select, .field textarea, .search-input {
+  min-height: var(--kbms-control-height);
+  padding-inline: 13px;
+  font-size: 12px;
+}
+.field textarea { min-height: 92px; padding-block: 12px; }
+.inline-hint { margin-top: 12px; font-size: 10px; line-height: 1.65; }
+.toolbar { gap: 11px; }
+.search-input, .filter-select { min-height: 42px; }
+.table-wrap th { padding: 15px 17px; font-size: 9px; }
+.table-wrap td { padding: var(--kbms-table-row-space) 17px; font-size: 11px; }
+.table-wrap td strong { font-size: 11px; }
+.table-wrap td small { font-size: 10px; }
+.table-wrap .status-tag { min-height: 24px; }
+.table-empty { padding: 48px 22px; font-size: 12px; }
+.house-grid { gap: 18px; }
+.house-card { padding: 20px; }
+.dialog {
+  width: min(660px, calc(100% - 28px));
+  padding: 0;
+}
+.dialog-head { gap: 16px; padding: 24px 26px 18px; }
+.dialog-head h2 { font-size: 22px; line-height: 1.25; }
+.dialog > form, .legal-dialog { padding: 24px 26px; }
+.form-fields { gap: 20px; }
+.dialog-actions { gap: 10px; padding-top: 8px; }
+.dialog-actions .button { min-height: 42px; }
+.app-footer { padding: 16px var(--kbms-page-space); }
+
+/* Tablet: preserve the spacious feel without squeezing multi-column layouts. */
+@media (min-width: 701px) and (max-width: 1100px) {
+  .content-area { padding: 28px clamp(20px, 2.5vw, 28px) 38px; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .overview-grid { grid-template-columns: minmax(0, 1fr); }
+  .book-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Mobile: keep touch targets generous and stack content rather than compressing it. */
+@media (max-width: 700px) {
+  :root {
+    --kbms-section-space: 24px;
+    --kbms-panel-padding: 18px;
+    --kbms-control-height: 46px;
+    --kbms-table-row-space: 13px;
+  }
+  .content-area { padding: 25px 17px 34px; }
+  .page-heading { margin-bottom: 25px; }
+  .page-heading h1 { font-size: clamp(27px, 7vw, 33px); }
+  .page-heading p { font-size: 12px; line-height: 1.65; }
+  .stats-grid { gap: 12px; margin-bottom: 24px; }
+  .stat-card { min-height: 124px; padding: 16px; }
+  .stat-number { margin-top: 15px; font-size: 29px; }
+  .overview-grid { gap: 16px; }
+  .quick-actions { padding: 16px; gap: 9px; }
+  .panel-header { padding: 18px; }
+  .panel-body { padding: 18px; }
+  .book-grid { gap: 12px; padding: 14px; }
+  .book-card { padding: 13px; gap: 11px; }
+  .book-cover, .book-cover-placeholder { height: 150px; }
+  .quick-entry, .circulation-entry { gap: 14px; }
+  .toolbar { gap: 9px; }
+  .table-wrap th { padding: 13px 12px; }
+  .table-wrap td { padding: 13px 12px; }
+  .dialog-head { padding: 19px 19px 14px; }
+  .dialog > form, .legal-dialog { padding: 18px; }
+  .form-fields { gap: 16px; }
+  .app-footer { padding: 14px 17px; font-size: 8px; }
+}
+@media (max-width: 420px) {
+  .content-area { padding-inline: 14px; }
+  .stats-grid { gap: 9px; }
+  .stat-card { padding: 13px; }
+  .panel-header, .panel-body { padding: 15px; }
+  .book-grid { padding: 11px; gap: 10px; }
+  .book-card { padding: 11px; }
+  .book-cover, .book-cover-placeholder { height: 136px; }
+  .app-footer { align-items: flex-start; flex-direction: column; gap: 6px; }
+}
