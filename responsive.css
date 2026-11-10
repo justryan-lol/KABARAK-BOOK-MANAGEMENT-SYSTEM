@@ -721,3 +721,32 @@ button[aria-busy="true"]::after, .kbms-inline-spinner {
   .stat-note { font-size: 9px; }
   .topbar { row-gap: 8px; }
 }
+
+/* Main document scrollbar: make the right-edge thumb easy to see and grab. */
+html {
+  overflow-y: auto !important;
+  scrollbar-width: auto;
+  scrollbar-color: #8f7b83 #eee8e6;
+  scrollbar-gutter: stable;
+}
+body {
+  overflow-y: visible !important;
+}
+html::-webkit-scrollbar {
+  width: 14px;
+}
+html::-webkit-scrollbar-track {
+  background: #eee8e6;
+}
+html::-webkit-scrollbar-thumb {
+  min-height: 44px;
+  border: 3px solid #eee8e6;
+  border-radius: 10px;
+  background: #8f7b83;
+  background-clip: padding-box;
+}
+html::-webkit-scrollbar-thumb:hover {
+  border-width: 2px;
+  background: #63082e;
+  background-clip: padding-box;
+}
