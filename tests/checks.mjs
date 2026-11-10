@@ -41,18 +41,18 @@ assert.equal((html.match(/<link\b[^>]*href=["']\.\/responsive\.css["']/gi) || []
   "Source HTML must link responsive.css exactly once for first-load visitors.");
 assert.ok(html.indexOf('<link rel="stylesheet" href="./styles.css">') < html.indexOf(responsiveStylesheetLink),
   "Responsive styles should load after the base stylesheet.");
+assert.ok(html.includes('<link rel="stylesheet" href="./spacious.css">'), "The roomier luxury-minimal stylesheet must be linked.");
 assert.match(buildScript, /responsiveLink\s*=\s*'<link rel="stylesheet" href="\.\/responsive\.css">'/,
   "The production build should preserve or inject the responsive stylesheet link.");
 assert.match(buildScript, /SUPABASE_URL:\?Set SUPABASE_URL/, "Builds must require an explicit backend URL, not silently use a project fallback.");
 assert.match(buildScript, /SUPABASE_ANON_KEY:\?Set SUPABASE_ANON_KEY/, "Builds must require an explicit publishable key.");
-assert.match(buildScript, /cp index\.html app\.js styles\.css responsive\.css/, "The build must package the responsive stylesheet.");
-assert.match(serviceWorker, /"\.\/responsive\.css"/, "The service worker must precache the responsive stylesheet.");
-assert.match(serviceWorker, /mhsk-kbms-v39/, "The service-worker cache must be bumped with the stylesheet delivery change.");
+assert.match(buildScript, /cp index\.html app\.js styles\.css responsive\.css spacious\.css/, "The build must package the spacious stylesheet.");
+assert.match(serviceWorker, /"\.\/spacious\.css"/, "The service worker must precache the spacious stylesheet.");
+assert.match(serviceWorker, /mhsk-kbms-v41/, "The service-worker cache version should match the current release.");
 assert.match(serviceWorker, /explicitlyLinked/, "The worker must avoid duplicate stylesheet injection in built output.");
 assert.ok(Array.isArray(manifest.icons) && manifest.icons.length > 0, "The installable app manifest needs an icon.");
 assert.match(config, /window\.BOOKSTORE_CONFIG\s*=/, "Runtime configuration must be initialized.");
 
-// Validate app-relative source references and service-worker precache assets.
 for (const [, asset] of html.matchAll(/\b(?:src|href)=["'](\.[^"']*)["']/g)) {
   const pathname = asset.split(/[?#]/, 1)[0];
   if (pathname === "./") continue;
@@ -66,7 +66,6 @@ for (const [, asset] of precache[1].matchAll(/["'](\.[^"']*)["']/g)) {
   assert.ok(existsSync(resolve(root, pathname)), `Service worker precaches a missing asset: ${asset}`);
 }
 
-// A service-role key must not be present in browser-delivered source.
 for (const file of ["index.html", "app.js", "config.js"]) {
   assert.doesNotMatch(read(file), /(?:service[_-]?role|supabase_service_role_key)/i,
     `A service-role credential reference must not appear in client code (${file}).`);
