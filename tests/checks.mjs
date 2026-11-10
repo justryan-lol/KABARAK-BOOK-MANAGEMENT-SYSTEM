@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (file) => readFileSync(resolve(root, file), "utf8");
 const requiredFiles = [
-  "index.html", "styles.css", "responsive.css", "app.js", "config.js",
+  "index.html", "styles.css", "responsive.css", "spacious.css", "app.js", "config.js",
   "sw.js", "manifest.json", "xlsx-export.js", "scripts/build-cloudflare.sh",
 ];
 for (const file of requiredFiles) {
@@ -48,7 +48,7 @@ assert.match(buildScript, /SUPABASE_URL:\?Set SUPABASE_URL/, "Builds must requir
 assert.match(buildScript, /SUPABASE_ANON_KEY:\?Set SUPABASE_ANON_KEY/, "Builds must require an explicit publishable key.");
 assert.match(buildScript, /cp index\.html app\.js styles\.css responsive\.css spacious\.css/, "The build must package the spacious stylesheet.");
 assert.match(serviceWorker, /"\.\/spacious\.css"/, "The service worker must precache the spacious stylesheet.");
-assert.match(serviceWorker, /mhsk-kbms-v41/, "The service-worker cache version should match the current release.");
+assert.match(serviceWorker, /mhsk-kbms-v42/, "The service-worker cache version should match the current release.");
 assert.match(serviceWorker, /explicitlyLinked/, "The worker must avoid duplicate stylesheet injection in built output.");
 assert.ok(Array.isArray(manifest.icons) && manifest.icons.length > 0, "The installable app manifest needs an icon.");
 assert.match(config, /window\.BOOKSTORE_CONFIG\s*=/, "Runtime configuration must be initialized.");
