@@ -1,11 +1,12 @@
 "use strict";
 
-const CACHE_NAME = "mhsk-kbms-v41";
+const CACHE_NAME = "mhsk-kbms-v42";
 const APP_ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./responsive.css",
+  "./spacious.css",
   "./app.js",
   "./xlsx-export.js",
   "./config.js",
