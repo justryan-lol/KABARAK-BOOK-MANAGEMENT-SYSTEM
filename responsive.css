@@ -750,3 +750,14 @@ html::-webkit-scrollbar-thumb:hover {
   background: #63082e;
   background-clip: padding-box;
 }
+
+
+/* Keep the final Student Register panel fully clear of the workspace footer. */
+.student-register-ending {
+  display: flow-root;
+  min-height: max-content;
+  margin-bottom: clamp(28px, 4vw, 48px) !important;
+}
+@media (max-width: 700px) {
+  .student-register-ending { margin-bottom: 30px !important; }
+}
