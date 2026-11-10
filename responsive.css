@@ -752,12 +752,26 @@ html::-webkit-scrollbar-thumb:hover {
 }
 
 
-/* Keep the final Student Register panel fully clear of the workspace footer. */
+/* Keep every line in the final Student Register panel visible. */
 .student-register-ending {
-  display: flow-root;
-  min-height: max-content;
-  margin-bottom: clamp(28px, 4vw, 48px) !important;
+  display: block;
+  height: auto !important;
+  min-height: 0;
+  max-height: none !important;
+  overflow: visible !important;
+  margin-bottom: 22px !important;
 }
-@media (max-width: 700px) {
-  .student-register-ending { margin-bottom: 30px !important; }
+.student-register-ending .panel-body {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+.student-register-ending .inline-hint {
+  display: block;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.65;
 }
