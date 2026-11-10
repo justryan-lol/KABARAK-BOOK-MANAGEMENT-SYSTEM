@@ -14,7 +14,7 @@ esac
 rm -rf dist
 mkdir -p dist
 
-cp index.html app.js styles.css responsive.css xlsx-export.js \
+cp index.html app.js styles.css responsive.css spacious.css xlsx-export.js \
    manifest.json mhsk-crest.png sw.js dist/
 cp _headers dist/_headers
 
@@ -35,6 +35,9 @@ if (!html.includes(responsiveLink)) {
 }
 fs.writeFileSync(file, html);
 if (!fs.existsSync('dist/responsive.css')) throw new Error('responsive.css was not copied to dist/.');
+const spaciousLink = '<link rel="stylesheet" href="./spacious.css">';
+if (html.split(spaciousLink).length !== 2) throw new Error('Expected exactly one spacious.css link in dist/index.html.');
+if (!fs.existsSync('dist/spacious.css')) throw new Error('spacious.css was not copied to dist/.');
 NODE
 
 node - "$SUPABASE_URL" "$SUPABASE_ANON_KEY" <<'NODE'
