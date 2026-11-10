@@ -28,6 +28,8 @@ assert.match(html, /id="mobile-nav-backdrop"[^>]*aria-label=/, "The mobile navig
 assert.match(css, /:focus-visible/, "Keyboard focus indicators must remain available.");
 assert.match(css, /prefers-reduced-motion:\s*reduce/, "Base styles must respect reduced-motion preferences.");
 assert.match(responsiveCss, /scrollbar-width:\s*thin/, "Scrollable regions must keep discoverable scrollbars.");
+assert.match(responsiveCss, /html\s*\{[^}]*overflow-y:\s*auto\s*!important/s, "The document must retain native vertical scrolling.");
+assert.match(responsiveCss, /html::\-webkit-scrollbar\s*\{[^}]*width:\s*14px/s, "The main vertical scrollbar must be wide enough to grab reliably.");
 assert.match(responsiveCss, /\.table-wrap\s*\{[^}]*overflow:\s*auto/s, "Tables must retain a scrollable overflow container.");
 assert.match(responsiveCss, /\.public-home\s*\{[^}]*height:\s*auto\s*!important/s, "The public homepage must not clip content below one viewport.");
 assert.match(responsiveCss, /max-width:\s*360px/, "The layout needs a narrow-phone breakpoint.");
@@ -45,7 +47,7 @@ assert.match(buildScript, /SUPABASE_URL:\?Set SUPABASE_URL/, "Builds must requir
 assert.match(buildScript, /SUPABASE_ANON_KEY:\?Set SUPABASE_ANON_KEY/, "Builds must require an explicit publishable key.");
 assert.match(buildScript, /cp index\.html app\.js styles\.css responsive\.css/, "The build must package the responsive stylesheet.");
 assert.match(serviceWorker, /"\.\/responsive\.css"/, "The service worker must precache the responsive stylesheet.");
-assert.match(serviceWorker, /mhsk-kbms-v38/, "The service-worker cache must be bumped with the stylesheet delivery change.");
+assert.match(serviceWorker, /mhsk-kbms-v39/, "The service-worker cache must be bumped with the stylesheet delivery change.");
 assert.match(serviceWorker, /explicitlyLinked/, "The worker must avoid duplicate stylesheet injection in built output.");
 assert.ok(Array.isArray(manifest.icons) && manifest.icons.length > 0, "The installable app manifest needs an icon.");
 assert.match(config, /window\.BOOKSTORE_CONFIG\s*=/, "Runtime configuration must be initialized.");
