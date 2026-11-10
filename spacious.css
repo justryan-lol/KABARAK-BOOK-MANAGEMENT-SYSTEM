@@ -1,0 +1,92 @@
+/* Additional breathing room for the Kabarak Book Management workspace.
+   Loaded by the service worker after responsive.css so it stays easy to tune. */
+:root {
+  --kbms-roomy-section: clamp(26px, 3vw, 40px);
+  --kbms-roomy-card: clamp(22px, 2.4vw, 32px);
+}
+
+/* Give page sections, dashboard cards and forms a calmer rhythm. */
+#app-content > .page-heading { margin-bottom: var(--kbms-roomy-section); }
+#app-content > .stats-grid { gap: clamp(16px, 1.8vw, 24px); margin-bottom: var(--kbms-roomy-section); }
+#app-content > .panel,
+#app-content > .overview-grid,
+#app-content > .quick-actions-panel,
+#app-content > .report-actions,
+#app-content > .house-grid,
+#app-content > .book-grid { margin-top: clamp(22px, 2.6vw, 34px); }
+#app-content > .stats-grid + .panel,
+#app-content > .stats-grid + .overview-grid,
+#app-content > .page-heading + .panel,
+#app-content > .page-heading + .stats-grid,
+#app-content > .page-heading + .overview-grid { margin-top: 0; }
+
+.overview-grid { gap: clamp(22px, 2.4vw, 32px); }
+.panel { border-radius: 16px; }
+.panel-header { gap: 20px; padding: 24px var(--kbms-roomy-card); }
+.panel-header h2 { font-size: 17px; }
+.panel-header p { margin-top: 9px; line-height: 1.7; }
+.panel-body { padding: var(--kbms-roomy-card); }
+.quick-actions { gap: 12px; padding: 22px var(--kbms-roomy-card); }
+.stream-list { gap: 22px; }
+.stream-row { gap: 16px; }
+
+/* Make book and summary cards feel less crowded without changing their layout. */
+.book-grid { gap: 22px; padding: 26px; }
+.book-card { gap: 17px; padding: 20px; border-radius: 13px; }
+.book-cover, .book-cover-placeholder { height: 194px; }
+.book-card dl { gap: 12px; }
+.book-card dl > div { padding-top: 12px; }
+.house-grid { gap: 22px; }
+.house-card { padding: 24px; }
+
+/* Comfortable forms, readable tables and larger gaps between controls. */
+.form-fields { gap: 22px; }
+.quick-entry, .circulation-entry { gap: 20px; }
+.field { gap: 11px; }
+.field input, .field select, .field textarea, .search-input, .filter-select { min-height: 46px; }
+.field textarea { min-height: 108px; }
+.inline-hint { margin-top: 14px; line-height: 1.75; }
+.toolbar, .inventory-toolbar { gap: 14px; }
+.table-wrap th { padding: 17px 20px; }
+.table-wrap td { padding: 18px 20px; line-height: 1.55; }
+.table-wrap .row-actions { gap: 12px; }
+
+/* Add a little air to the welcome screen while preserving its responsive flow. */
+.public-hero { gap: clamp(38px, 6vw, 100px); }
+.public-description { line-height: 1.9; }
+.public-hero-actions { gap: 18px 26px; }
+.public-workspace-card { padding: clamp(28px, 3.8vw, 48px); }
+.public-workspace-modules { gap: 17px; }
+.public-workspace-module { min-height: 98px; padding: 20px 22px; }
+
+@media (max-width: 700px) {
+  :root { --kbms-roomy-section: 26px; --kbms-roomy-card: 20px; }
+  #app-content > .panel,
+  #app-content > .overview-grid,
+  #app-content > .quick-actions-panel,
+  #app-content > .report-actions,
+  #app-content > .house-grid,
+  #app-content > .book-grid { margin-top: 22px; }
+  .panel-header { padding: 20px; }
+  .panel-body { padding: 20px; }
+  .overview-grid { gap: 20px; }
+  .book-grid { gap: 16px; padding: 16px; }
+  .book-card { gap: 14px; padding: 16px; }
+  .book-cover, .book-cover-placeholder { height: 170px; }
+  .house-grid { gap: 14px; }
+  .house-card { padding: 18px; }
+  .form-fields, .quick-entry, .circulation-entry { gap: 18px; }
+  .table-wrap th, .table-wrap td { padding: 15px 14px; }
+  .public-hero { gap: 30px; }
+  .public-workspace-card { padding: 20px 18px; }
+  .public-workspace-module { min-height: 78px; padding: 14px; }
+}
+
+@media (max-width: 420px) {
+  :root { --kbms-roomy-card: 17px; }
+  .panel-header, .panel-body { padding: 17px; }
+  .book-grid { gap: 13px; padding: 13px; }
+  .book-card { padding: 14px; }
+  .house-card { padding: 15px; }
+  .table-wrap th, .table-wrap td { padding: 13px 12px; }
+}
