@@ -26,7 +26,7 @@
   ]);
   const state = {
     page: "dashboard", db: null, supabase: null, session: null, staffRole: null, offlineAuthorization: null, syncConfig: null, sessionTask: null, channel: null,
-    selectedClassId: "", selectedStaffUserId: "", classRosterQuery: "", governanceQuery: "", globalSearchTask: 0, demoMode: DEMO_MODE,
+    selectedClassId: "", classRosterQuery: "", governanceQuery: "", globalSearchTask: 0, demoMode: DEMO_MODE,
     inventoryQuery: "", studentQuery: "", bookstoreReturnQuery: "", inventoryFilter: "all", inventoryView: "table", studentFilter: "all", textbookQuery: "",
     circulationMode: "issue", deferredInstall: null, syncing: false, remoteRefreshTimer: null, pageTransitionRequested: false,
   };
@@ -1648,6 +1648,26 @@
       <section class="panel" style="margin-top:16px"><div class="panel-header"><div><h2>Principal approval queue</h2><p>Requests, decisions and reasons are retained in the local demonstration history.</p></div></div><div class="table-wrap"><table><thead><tr><th>Request</th><th>Submitted by</th><th>Requested</th><th>Status</th><th>Decision</th></tr></thead><tbody>${approvals.length ? byNewest(approvals).map((item) => `<tr><td><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.description || "")}</small></td><td>${escapeHtml(item.requested_by_label || "Demo staff")}</td><td>${escapeHtml(item.requested_at || "—")}</td><td><span class="status-tag ${item.status === "approved" ? "good" : item.status === "rejected" ? "danger" : "warn"}">${escapeHtml(item.status)}</span></td><td>${item.status === "pending" ? `<button class="footer-link" data-decide-demo-approval="${escapeHtml(item.id)}" data-decision="approved">Approve</button> · <button class="footer-link" data-decide-demo-approval="${escapeHtml(item.id)}" data-decision="rejected">Reject</button>` : `${escapeHtml(item.decision_note || "Decision recorded")}`}</td></tr>`).join("") : `<tr><td colspan="5" class="table-empty">No approval requests.</td></tr>`}</tbody></table></div></section>`;
   }
 
+  function openConnectedStaffAccount(row) {
+    const profile = row.cells[0];
+    const userId = row.dataset.staffAccount;
+    const active = row.dataset.staffActive === "true";
+    byId("staff-account-title").textContent = profile.querySelector("strong").textContent;
+    byId("staff-account-details").innerHTML = `
+      <dl class="staff-account-details-list">
+        <div><dt>Username</dt><dd>${escapeHtml(row.cells[1].textContent.trim() || "—")}</dd></div>
+        <div><dt>Role</dt><dd>${escapeHtml(row.cells[2].textContent.trim() || "—")}</dd></div>
+        <div><dt>Staff number / department</dt><dd>${escapeHtml(profile.querySelector("small")?.textContent.trim() || "—")}</dd></div>
+        <div><dt>Status</dt><dd><span class="status-tag ${active ? "good" : "danger"}">${active ? "Active" : "Inactive"}</span></dd></div>
+      </dl>`;
+    byId("staff-account-actions").innerHTML = userId === state.session.user.id
+      ? "<p class=\"inline-hint\">This is your signed-in account.</p>"
+      : `<button class="button button-secondary" data-staff-action="reset_password" data-user-id="${escapeHtml(userId)}">Reset password</button>
+        <button class="button button-secondary" data-staff-action="change_role" data-user-id="${escapeHtml(userId)}">Change role</button>
+        <button class="button ${active ? "button-danger" : "button-secondary"}" data-staff-action="${active ? "deactivate" : "activate"}" data-user-id="${escapeHtml(userId)}">${active ? "Deactivate" : "Activate"}</button>`;
+    byId("staff-account-dialog").showModal();
+  }
+
   async function renderConnectedGovernance() {
     const role = currentRole();
     const isAdmin = ["admin", "super_admin"].includes(role);
@@ -1676,7 +1696,7 @@
     const toolbar = `${isAdmin ? '<button class="button button-secondary" data-action="add-staff-account">Create staff account</button>' : ''}${canConfigureSchool ? '<button class="button button-secondary" data-action="add-academic-year">Add academic year</button><button class="button button-secondary" data-action="add-school-class">Add class</button><button class="button button-secondary" data-action="add-school-subject">Add subject</button><button class="button button-secondary" data-action="add-teacher-assignment">Assign teacher</button>' : ''}<button class="button button-primary" data-action="request-approval">New approval request</button>`;
     content.innerHTML = `${heading("SCHOOL ADMINISTRATION", "Staff & approvals", "Connected school workspace. Staff access, assignments and approval decisions are checked by the server.", toolbar)}
       <section class="stats-grid">${statCard("PENDING APPROVALS", approvals.filter((item) => item.status === "pending").length, "Awaiting an authorized decision")}${statCard("RECORDED REQUESTS", approvals.length, "Approval history")}${isAdmin ? statCard("STAFF ACCOUNTS", staff.length, "Provisioned accounts") : statCard("YOUR ROLE", escapeHtml(role || "Staff"), "Server-verified role")}${canConfigureSchool ? statCard("ACTIVE TEACHER LINKS", assignments.filter((item) => !item.ends_on || item.ends_on >= localDateIso()).length, "Date-aware assignments") : ""}</section>
-      ${isAdmin ? `<section class="panel"><div class="panel-header"><div><h2>Staff directory</h2><p>Temporary passwords are shown only once when an account is created or reset.</p></div></div><div class="table-wrap"><table><thead><tr><th>Staff</th><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody>${staff.length ? staff.map((person) => { const membership = memberships.get(person.user_id); const selected = state.selectedStaffUserId === person.user_id; return `<tr class="${selected ? "staff-row-selected" : ""}"><td><strong>${escapeHtml(person.display_name)}</strong><small>${escapeHtml(person.staff_number || person.department || "")}</small></td><td class="code-text">${escapeHtml(person.username || "—")}</td><td>${escapeHtml(membership?.role || "No role")}</td><td><span class="status-tag ${person.active && membership?.active ? "good" : "danger"}">${person.active && membership?.active ? "Active" : "Inactive"}</span></td><td>${person.user_id === state.session.user.id ? "Current account" : `<div class="staff-account-controls"><button type="button" class="button button-secondary button-small" data-select-staff="${escapeHtml(person.user_id)}" aria-pressed="${selected}">${selected ? "Selected account" : "Select account"}</button><div class="row-actions" ${selected ? "" : "hidden"}><button class="footer-link" data-staff-action="reset_password" data-user-id="${escapeHtml(person.user_id)}">Reset password</button><button class="footer-link" data-staff-action="change_role" data-user-id="${escapeHtml(person.user_id)}">Change role</button><button class="footer-link" data-staff-action="${person.active && membership?.active ? "deactivate" : "activate"}" data-user-id="${escapeHtml(person.user_id)}">${person.active && membership?.active ? "Deactivate" : "Activate"}</button></div></div>`}</td></tr>`; }).join("") : `<tr><td colspan="5" class="table-empty">No staff accounts found.</td></tr>`}</tbody></table></div></section>` : ""}
+      ${isAdmin ? `<section class="panel"><div class="panel-header"><div><h2>Staff directory</h2><p>Temporary passwords are shown only once when an account is created or reset.</p></div></div><div class="table-wrap"><table><thead><tr><th>Staff</th><th>Username</th><th>Role</th></tr></thead><tbody>${staff.length ? staff.map((person) => { const membership = memberships.get(person.user_id); const active = Boolean(person.active && membership?.active); return `<tr class="staff-account-row" data-staff-account="${escapeHtml(person.user_id)}" data-staff-active="${active}"><td><button type="button" class="staff-account-open" data-select-staff="${escapeHtml(person.user_id)}"><strong>${escapeHtml(person.display_name)}</strong><small>${escapeHtml(person.staff_number || person.department || "")}</small></button></td><td class="code-text">${escapeHtml(person.username || "—")}</td><td>${escapeHtml(membership?.role || "No role")}</td></tr>`; }).join("") : `<tr><td colspan="3" class="table-empty">No staff accounts found.</td></tr>`}</tbody></table></div></section>` : ""}
       ${canConfigureSchool ? `<section class="panel" style="margin-top:16px"><div class="panel-header"><div><h2>Academic years, classes & subjects</h2><p>Set the active year and maintain the school's configurable class and subject directory.</p></div></div><div class="table-wrap"><table><thead><tr><th>Academic year</th><th>Dates</th><th>Status</th><th></th></tr></thead><tbody>${years.length ? years.map((year) => `<tr><td><strong>${escapeHtml(year.year_label)}</strong></td><td>${escapeHtml(year.starts_on || "—")} → ${escapeHtml(year.ends_on || "—")}</td><td><span class="status-tag ${year.is_current ? "good" : ""}">${year.is_current ? "Current" : escapeHtml(year.status)}</span></td><td>${!year.is_current ? `<button class="footer-link" data-set-current-year="${escapeHtml(year.id)}">Make current</button>` : ""}</td></tr>`).join("") : `<tr><td colspan="4" class="table-empty">No academic years configured.</td></tr>`}</tbody></table></div><div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Grade</th><th>Class label (must match student register)</th><th>Section</th><th>Academic year</th></tr></thead><tbody>${classes.length ? classes.map((item) => `<tr><td>${escapeHtml(item.grade_label)}</td><td>${escapeHtml(item.class_label)}</td><td>${escapeHtml(item.school_section || "Both / not set")}</td><td>${escapeHtml(years.find((year) => year.id === item.academic_year_id)?.year_label || "—")}</td></tr>`).join("") : `<tr><td colspan="4" class="table-empty">No classes configured.</td></tr>`}</tbody></table></div><div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Subject code</th><th>Subject name</th><th>Status</th></tr></thead><tbody>${subjects.length ? subjects.map((item) => `<tr><td class="code-text">${escapeHtml(item.subject_code)}</td><td>${escapeHtml(item.subject_name)}</td><td>${item.active ? "Active" : "Inactive"}</td></tr>`).join("") : `<tr><td colspan="3" class="table-empty">No subjects configured.</td></tr>`}</tbody></table></div></section>
       <section class="panel" style="margin-top:16px"><div class="panel-header"><div><h2>Teacher assignments</h2><p>Assignments are date-aware and remain in history when ended. Class labels and subjects must match the student and textbook registers.</p></div></div><div class="table-wrap"><table><thead><tr><th>Teacher</th><th>Assignment</th><th>Class</th><th>Subject</th><th>From</th><th>Until</th><th></th></tr></thead><tbody>${assignments.length ? assignments.map((item) => `<tr><td>${escapeHtml(staffMap.get(item.staff_user_id)?.display_name || "Staff account")}</td><td>${escapeHtml(item.assignment_type.replaceAll("_", " "))}</td><td>${escapeHtml(classMap.get(item.class_id)?.class_label || "—")}</td><td>${escapeHtml(subjectMap.get(item.subject_id)?.subject_name || "Class-wide")}</td><td>${escapeHtml(item.starts_on)}</td><td>${escapeHtml(item.ends_on || "Current")}</td><td>${!item.ends_on ? `<button class="footer-link" data-end-staff-assignment="${escapeHtml(item.id)}">End assignment</button>` : ""}</td></tr>`).join("") : `<tr><td colspan="7" class="table-empty">No teacher assignments recorded.</td></tr>`}</tbody></table></div></section>` : ""}
       <section class="panel" style="margin-top:16px"><div class="panel-header"><div><h2>Principal approval queue</h2><p>Approval reasons, decisions and timestamps are stored in the server audit history.</p></div></div><div class="table-wrap"><table><thead><tr><th>Request</th><th>Requested by</th><th>Type</th><th>Submitted</th><th>Status</th><th>Decision</th></tr></thead><tbody>${approvals.length ? approvals.map((item) => `<tr><td><strong>${escapeHtml(item.request_reason)}</strong><small>${escapeHtml(item.target_table)}${item.target_id ? ` · ${escapeHtml(item.target_id)}` : ""}</small></td><td class="code-text">${escapeHtml(String(item.requested_by).slice(0, 8))}</td><td>${escapeHtml(item.request_type.replaceAll("_", " "))}</td><td>${escapeHtml(item.requested_at ? new Date(item.requested_at).toLocaleString("en-KE", { timeZone: "Africa/Nairobi" }) : "—")}</td><td><span class="status-tag ${item.status === "approved" ? "good" : item.status === "rejected" ? "danger" : "warn"}">${escapeHtml(item.status)}</span></td><td>${item.status === "pending" && canApprove && item.requested_by !== state.session.user.id ? `<button class="footer-link" data-approval-id="${escapeHtml(item.id)}" data-decision="approved">Approve</button> · <button class="footer-link" data-approval-id="${escapeHtml(item.id)}" data-decision="rejected">Reject</button>` : escapeHtml(item.decision_note || (item.status === "pending" ? "Awaiting approver" : "Decision recorded"))}</td></tr>`).join("") : `<tr><td colspan="6" class="table-empty">No approval requests.</td></tr>`}</tbody></table></div></section>`;
@@ -3137,7 +3157,6 @@
 
   function navigate(page) {
     if (!PAGE_NAMES[page]) return;
-    if (page !== "governance") state.selectedStaffUserId = "";
     if (state.page === page) { setMobileNavOpen(false); return; }
     setMobileNavOpen(false);
     state.page = page;
@@ -3156,7 +3175,9 @@
   }
 
   document.addEventListener("click", async (event) => {
+    const staffRow = event.target.closest("tr[data-staff-account]");
     const target = event.target.closest("button");
+    if (staffRow && !target) { openConnectedStaffAccount(staffRow); return; }
     if (!target) return;
     if (target.dataset.action === "public-enter") {
       if (state.syncConfig) showAuthDialog();
@@ -3201,18 +3222,15 @@
     if (target.dataset.endStaffAssignment && state.syncConfig) await endConnectedTeacherAssignment(target.dataset.endStaffAssignment);
     if (target.dataset.action === "request-approval" && state.syncConfig) await createConnectedApprovalRequest();
     if (target.dataset.selectStaff && state.syncConfig) {
-      const userId = target.dataset.selectStaff;
-      state.selectedStaffUserId = state.selectedStaffUserId === userId ? "" : userId;
-      document.querySelectorAll("[data-select-staff]").forEach((button) => {
-        const selected = button.dataset.selectStaff === state.selectedStaffUserId;
-        button.setAttribute("aria-pressed", String(selected));
-        button.textContent = selected ? "Selected account" : "Select account";
-        button.closest("tr").classList.toggle("staff-row-selected", selected);
-        button.closest("tr").querySelector(".row-actions").hidden = !selected;
-      });
+      openConnectedStaffAccount(target.closest("tr[data-staff-account]"));
       return;
     }
-    if (target.dataset.staffAction && state.syncConfig) await connectedStaffAction(target.dataset.staffAction, target.dataset.userId);
+    if (target.dataset.closeStaffAccount) byId("staff-account-dialog").close();
+    if (target.dataset.staffAction && state.syncConfig) {
+      const dialog = byId("staff-account-dialog");
+      if (dialog.open) dialog.close();
+      await connectedStaffAction(target.dataset.staffAction, target.dataset.userId);
+    }
     if (target.dataset.approvalId && state.syncConfig) await decideConnectedApproval(target.dataset.approvalId, target.dataset.decision);
     if (target.dataset.action === "demo-add-assignment" && !state.syncConfig) await addDemoAssignment();
     if (target.dataset.action === "demo-add-staff" && !state.syncConfig) await addDemoStaff();
