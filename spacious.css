@@ -140,3 +140,8 @@ html, body { max-width: 100%; overflow-x: clip; }
   .table-wrap th, .table-wrap td { padding: 6px 3px; font-size: 8px; }
   .table-wrap .status-tag { padding: 3px 4px; font-size: 7px; }
 }
+.staff-account-controls { display: grid; justify-items: start; gap: 6px; }
+.staff-account-controls > .button { min-height: 30px; padding-inline: 9px; font-size: 9px; }
+.row-actions[hidden] { display: none !important; }
+.staff-row-selected { background: rgb(99 8 46 / 4%); }
+.staff-row-selected > td:first-child { box-shadow: inset 3px 0 #c49a50; }
