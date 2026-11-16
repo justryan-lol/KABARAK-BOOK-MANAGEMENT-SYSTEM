@@ -3146,6 +3146,8 @@
       if (active) button.setAttribute("aria-current", "page");
       else button.removeAttribute("aria-current");
     });
+    const activeNavigation = document.querySelector(".nav-item[aria-current='page']")?.parentElement;
+    activeNavigation?.previousElementSibling?.setAttribute("aria-expanded", "true");
     history.replaceState(null, "", `#${page}`);
     refresh();
   }
@@ -3156,6 +3158,10 @@
     if (target.dataset.action === "public-enter") {
       if (state.syncConfig) showAuthDialog();
       else { setPublicGate(false); await refresh(); }
+    }
+    if (target.hasAttribute("data-nav-section")) {
+      const expanded = target.getAttribute("aria-expanded") === "true";
+      target.setAttribute("aria-expanded", String(!expanded));
     }
     if (target.dataset.action === "mobile-nav-toggle") setMobileNavOpen(!byId("app-shell")?.classList.contains("mobile-nav-open"));
     if (target.dataset.action === "mobile-nav-close") setMobileNavOpen(false);

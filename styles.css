@@ -1312,6 +1312,28 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, *::-webkit-scrollbar { width: 
 .sidebar .sidebar-toggle:hover { border-color: rgb(196 154 80 / 55%); background: rgb(196 154 80 / 10%); }
 .workspace-label { border-color: rgb(255 255 255 / 10%); }
 .sidebar-bottom { border-color: transparent; }
+.sidebar .nav-label {
+  width: 100%;
+  justify-content: flex-start;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sidebar .nav-label::after {
+  width: 6px;
+  height: 6px;
+  margin-left: auto;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  content: "";
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 160ms ease;
+}
+.sidebar .nav-label[aria-expanded="false"]::after { transform: rotate(-45deg); }
+.sidebar .nav-label:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+.sidebar .nav-label[aria-expanded="false"] + .nav-list { display: none !important; }
 
 /* The welcome page is a complete landing page, not just a sign-in splash. */
 .public-home { overflow-x: clip; overflow-y: visible; }
