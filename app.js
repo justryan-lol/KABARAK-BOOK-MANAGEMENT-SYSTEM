@@ -1751,8 +1751,10 @@
     const query = state.classRosterQuery.trim().toLowerCase();
     const visibleMembers = members.filter((student) => !query || [student.full_name, student.admission_number, student.house_code]
       .some((value) => String(value || "").toLowerCase().includes(query)));
-    const activeLoans = loans.filter((loan) => !loan.returned_at && members.some((student) => student.id === loan.student_id)).length;
-    const activeTextbooks = allocations.filter((item) => !item.returned_at && members.some((student) => student.id === item.student_id)).length;
+    const memberIds = new Set(members.map((student) => student.id));
+    const activeLoans = loans.filter((loan) => !loan.returned_at && memberIds.has(loan.student_id)).length;
+    const textbookCentreLoans = allocations.filter((item) => memberIds.has(item.student_id)).length;
+    const activeTextbooks = allocations.filter((item) => !item.returned_at && memberIds.has(item.student_id)).length;
     const actions = canManageStudents()
       ? `<div class="heading-actions"><button class="button button-secondary" data-action="class-student-template">Download class template</button><button class="button button-secondary" data-action="import-class-students">Import class list</button><button class="button button-primary" data-action="add-class-student">Add member</button></div>`
       : "";
@@ -1761,6 +1763,7 @@
         ${statCard("CLASS MEMBERS", members.length.toLocaleString(), "Active students assigned to this class")}
         ${statCard("LIBRARY LOANS", activeLoans.toLocaleString(), "Current library copies held by members")}
         ${statCard("TEXTBOOKS OUT", activeTextbooks.toLocaleString(), "Current textbook allocations to members")}
+        ${statCard("TEXTBOOK CENTRE LOANS", textbookCentreLoans.toLocaleString(), "All textbook loans recorded for this class")}
               </section>
       <section class="panel">
         <div class="panel-header"><div><h2>Class register</h2><p>${visibleMembers.length.toLocaleString()} of ${members.length.toLocaleString()} members shown · ${escapeHtml(classRecord.grade_label || "")}</p></div>

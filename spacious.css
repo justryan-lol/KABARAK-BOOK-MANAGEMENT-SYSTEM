@@ -6,7 +6,10 @@
 }
 #app-content > .page-heading { margin-bottom: var(--kbms-roomy-section); }
 #app-content > .stats-grid { gap: clamp(12px, 1.3vw, 18px); margin-bottom: var(--kbms-roomy-section); }
-#app-content > .class-roster-stats { width: min(100%, 960px); grid-template-columns: repeat(3, minmax(0, 1fr)); margin-inline: auto; }
+#app-content > .class-roster-stats { width: min(100%, 1040px); grid-template-columns: repeat(4, minmax(0, 1fr)); margin-inline: auto; }
+@media (max-width: 1050px) {
+  #app-content > .class-roster-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 700px) {
   #app-content > .class-roster-stats { width: min(100%, 520px); grid-template-columns: minmax(0, 1fr); }
 }
