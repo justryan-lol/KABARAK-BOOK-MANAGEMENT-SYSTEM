@@ -1757,7 +1757,7 @@
       ? `<div class="heading-actions"><button class="button button-secondary" data-action="class-student-template">Download class template</button><button class="button button-secondary" data-action="import-class-students">Import class list</button><button class="button button-primary" data-action="add-class-student">Add member</button></div>`
       : "";
     content.innerHTML = `${heading("ACADEMIC YEAR · CLASS DIRECTORY", classRecord.class_label || classRecord.display_name || "Class members", "Manage the students assigned to this class. Imports are validated before any student records are saved.", `<div class="heading-actions"><button class="button button-quiet" data-page-link="year-setup">Back to classes</button>${actions}</div>`)}
-      <section class="stats-grid">
+      <section class="stats-grid class-roster-stats">
         ${statCard("CLASS MEMBERS", members.length.toLocaleString(), "Active students assigned to this class")}
         ${statCard("LIBRARY LOANS", activeLoans.toLocaleString(), "Current library copies held by members")}
         ${statCard("TEXTBOOKS OUT", activeTextbooks.toLocaleString(), "Current textbook allocations to members")}
