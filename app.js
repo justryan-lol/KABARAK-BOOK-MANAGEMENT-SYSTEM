@@ -104,8 +104,8 @@
     indicator.className = `sync-indicator${kind === "pending" ? " pending" : kind === "error" ? " error" : ""}`;
     indicator.lastElementChild.textContent = label;
     byId("connection-label").textContent = state.session
-      ? "Synchronized workspace"
-      : state.syncConfig ? "Sign-in required" : "Local demo only";
+      ? "Cloud connected"
+      : state.syncConfig ? "Sign-in required" : "Local demo";
     byId("auth-button").textContent = state.session ? "Sign out" : "Sign in";
     byId("user-label").textContent = state.staffRole ? `KBMS ${state.staffRole.replaceAll("_", " ")}` : "Library desk";
   }
