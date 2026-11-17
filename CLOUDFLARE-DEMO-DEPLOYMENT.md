@@ -17,7 +17,7 @@ Configure Cloudflare Pages with build command `bash scripts/build-cloudflare.sh`
 - `SUPABASE_URL` — an HTTPS Supabase project URL.
 - `SUPABASE_ANON_KEY` — that project's publishable/anon key.
 
-The build now fails if either value is missing; it does not fall back to the repository's configured development project. The script copies `responsive.css` and adds its stylesheet link to the generated `dist/index.html`, so responsive rules load for first-time visitors before a service worker is installed. `sw.js` precaches the separate stylesheet for later offline use.
+When both Cloudflare build variables are present, they override the repository runtime configuration. If Pages does not expose dashboard variables to the build shell, the script validates and packages the existing public `config.js` rather than failing before deployment. That file is client-visible and must contain only the intended Supabase project URL and publishable/anon key; never put a service-role key in it. Keep the repository config pointed at the approved demo backend before sharing the site. The script copies `responsive.css` and `spacious.css` and verifies their first-load stylesheet links in the generated `dist/index.html`.
 
 Locally:
 
