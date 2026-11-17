@@ -31,7 +31,7 @@ if (!html.includes(responsiveLink)) {
   if (html.split(baseLink).length !== 2) {
     throw new Error('Expected exactly one styles.css link in index.html.');
   }
-  html = html.replace(baseLink, `${baseLink}\\n    ${responsiveLink}`);
+  html = html.replace(baseLink, `${baseLink}\n    ${responsiveLink}`);
 }
 fs.writeFileSync(file, html);
 if (!fs.existsSync('dist/responsive.css')) throw new Error('responsive.css was not copied to dist/.');
@@ -51,7 +51,7 @@ const config = { url: process.argv[2], anonKey: process.argv[3] };
 if (!config.anonKey || /service[_-]?role/i.test(config.anonKey)) {
   throw new Error('A public Supabase publishable/anon key is required; service-role keys are forbidden.');
 }
-fs.writeFileSync('dist/config.js', `window.BOOKSTORE_CONFIG = ${JSON.stringify(config)};\\n`);
+fs.writeFileSync('dist/config.js', `window.BOOKSTORE_CONFIG = ${JSON.stringify(config)};\n`);
 NODE
   echo "KBMS build completed using Cloudflare build variables."
 else
