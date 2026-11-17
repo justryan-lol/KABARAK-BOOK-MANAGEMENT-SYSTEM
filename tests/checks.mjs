@@ -44,8 +44,10 @@ assert.ok(html.indexOf('<link rel="stylesheet" href="./styles.css">') < html.ind
 assert.ok(html.includes('<link rel="stylesheet" href="./spacious.css">'), "The roomier luxury-minimal stylesheet must be linked.");
 assert.match(buildScript, /responsiveLink\s*=\s*'<link rel="stylesheet" href="\.\/responsive\.css">'/,
   "The production build should preserve or inject the responsive stylesheet link.");
-assert.match(buildScript, /SUPABASE_URL:\?Set SUPABASE_URL/, "Builds must require an explicit backend URL, not silently use a project fallback.");
-assert.match(buildScript, /SUPABASE_ANON_KEY:\?Set SUPABASE_ANON_KEY/, "Builds must require an explicit publishable key.");
+assert.match(buildScript, /CONFIG_MODE="repository"/, "Builds must support the checked-in runtime config when Pages omits build variables.");
+assert.match(buildScript, /CONFIG_MODE="environment"/, "Explicit Pages build variables must override repository config.");
+assert.match(buildScript, /vm\.runInNewContext/, "Repository runtime config must be evaluated and validated before packaging.");
+assert.match(buildScript, /service[_-]?role/i, "The build must reject service-role credentials.");
 assert.match(buildScript, /cp index\.html app\.js styles\.css responsive\.css spacious\.css/, "The build must package the spacious stylesheet.");
 assert.match(serviceWorker, /"\.\/spacious\.css"/, "The service worker must precache the spacious stylesheet.");
 assert.match(serviceWorker, /mhsk-kbms-v42/, "The service-worker cache version should match the current release.");
