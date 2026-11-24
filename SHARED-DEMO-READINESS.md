@@ -2,17 +2,17 @@
 
 ## Current state
 
-The public `/?demo=1` route intentionally switches to a separate IndexedDB database named `mhsk-bookstore-demo`. `app.js` sets `DEMO_MODE`, `DB_NAME`, and `state.demoMode` at startup; `connectSupabase()` explicitly leaves `state.syncConfig` and `state.supabase` unset in demo mode. The fictional scenario loader and migration helpers (`loadFictionalDemoData`, `upgradeDemoScenario`, and `repairDemoClassDirectory`) write only to browser-local IndexedDB. Circulation, textbook allocation/return, student register/import, class setup, archives, clearances, reports, staff workflow preview and audit examples read/write these local stores. Other testers and devices do not see those records.
+The public `/?demo=1` route continues to use browser-local IndexedDB. The optional `/?demo=cloud` route uses the configured Supabase development project, normal staff authentication, and a separate browser database/auth key. The shared demo seed is an admin-only RPC that atomically adds fictional records and never deletes existing rows. All authorized accounts on the selected project can see the seeded records; users without an active staff membership are rejected by the existing sign-in flow.
 
-This is not shared-demo access. No change in this repair connects the demo route to the currently configured Supabase development project, creates a Supabase project, provisions accounts, seeds data or changes billing.
+The shared route does not create accounts or bypass staff authentication. The migration has been added to the repository but has not been applied to Supabase; the seed is unavailable until an authorized project operator applies it.
 
 ## Recommended smallest safe migration
 
-1. Obtain school/project-owner approval and create a distinct demo-only Supabase project. Do not reuse the staff/development project. Store only that project's URL and publishable key in a separately built Cloudflare Pages environment.
-2. Apply the existing schema to the demo project in a disposable test phase, then test RLS and every role before any public demo. Seed only fictional data into that isolated project; keep seed scripts and reset procedures explicitly demo-only and audited.
+1. The approved development project can be used for internal testing, but a distinct demo-only Supabase project is safer for external reviewers because all authorized accounts on one project share the same records. Never use the school production project for the shared demo.
+2. Apply `supabase/migrations/20261124154800_shared_demo_seed.sql` after the base KBMS schema. The seed RPC is atomic, admin-only, collision-checked, and non-destructive; test it with an administrator in the approved development project before inviting reviewers.
 3. Build a separate demo deployment (recommended) so the app's one Supabase client is configured entirely for the demo backend. Give it its own `SUPABASE_URL` and `SUPABASE_ANON_KEY`; never select backends from an untrusted browser query parameter and never include a service-role key in the build.
 4. Reuse `kbms-username-login`, `kbms-staff-admin`, `staff_profiles`, and `staff_memberships` in the demo project. The existing account workflow already generates a random temporary password, requires first-login change, checks the active administrator on the server, protects super-admin assignment, and deactivation updates the role membership through the audited database function. A newly provisioned demo administrator can create individual tester accounts after the isolated project is deployed.
-5. Keep the existing local `?demo=1` route until the shared demo passes acceptance. Then expose shared demo access through the normal website using a clear demo entry and authentication on the separate demo deployment/backend. Do not make a public route silently authenticate as a shared account.
+5. Keep `?demo=1` as the no-account local demo. The `?demo=cloud` route requires staff sign-in and never silently authenticates as a shared account.
 6. Decide demo account expiration, data reset cadence, abuse/rate controls, account owner, audit retention and privacy notice before sharing the URL.
 
 ## Account-system review and remaining checks
@@ -31,7 +31,7 @@ Cloudflare Pages build settings should be set separately for the demo deployment
 - `SUPABASE_URL`: the approved demo project's HTTPS URL.
 - `SUPABASE_ANON_KEY`: that project's publishable/anon key.
 
-The build script requires these variables and intentionally has no fallback to the current project. Supabase service-role/secret keys belong only in Supabase Edge Function secrets, configured by the demo project owner. Provisioning, schema deployment, account creation and demo seeding require project-owner/admin approval. No such setup has been performed by this change.
+The build script accepts project URL and publishable/anon key variables, or validates the checked-in public config. Never put service-role/secret keys in the browser. The new seed migration has not yet been applied to the configured development project; a signed-in admin must run the seed once after deployment. Cloudflare hosting and schema deployment are not performed by the build script.
 
 ## Acceptance checklist before sharing
 

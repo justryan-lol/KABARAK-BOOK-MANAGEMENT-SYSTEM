@@ -6,8 +6,10 @@
     NB: "Nzoia Boys", NG: "Nzoia Girls", MB: "Mara Boys", MG: "Mara Girls",
   };
   const BOOK_CODE = /^[A-Z0-9][A-Z0-9._/-]{0,79}$/i;
-  const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
-  const DB_NAME = DEMO_MODE ? "mhsk-bookstore-demo" : "mhsk-bookstore";
+  const demoRoute = new URLSearchParams(window.location.search).get("demo");
+  const DEMO_MODE = demoRoute === "1";
+  const SHARED_DEMO_MODE = demoRoute === "cloud";
+  const DB_NAME = SHARED_DEMO_MODE ? "mhsk-bookstore-cloud-demo" : DEMO_MODE ? "mhsk-bookstore-demo" : "mhsk-bookstore";
   const DB_VERSION = 10;
   const PAGE_NAMES = {
     dashboard: "Overview", circulation: "Issue & return", inventory: "Library catalog",
@@ -26,7 +28,7 @@
   ]);
   const state = {
     page: "dashboard", db: null, supabase: null, session: null, staffRole: null, offlineAuthorization: null, syncConfig: null, sessionTask: null, channel: null,
-    selectedClassId: "", classRosterQuery: "", governanceQuery: "", globalSearchTask: 0, demoMode: DEMO_MODE,
+    selectedClassId: "", classRosterQuery: "", governanceQuery: "", globalSearchTask: 0, demoMode: DEMO_MODE, sharedDemoMode: SHARED_DEMO_MODE,
     inventoryQuery: "", studentQuery: "", bookstoreReturnQuery: "", inventoryFilter: "all", inventoryView: "table", studentFilter: "all", textbookQuery: "",
     circulationMode: "issue", deferredInstall: null, syncing: false, remoteRefreshTimer: null, pageTransitionRequested: false,
   };
@@ -95,8 +97,15 @@
     shell.hidden = showWelcome;
     document.body.classList.toggle("auth-pending", showWelcome);
     const entry = welcome.querySelector('[data-action="public-enter"]');
-    if (entry) entry.querySelector("span").textContent = state.syncConfig ? "Staff sign in" : "Open demo workspace";
-    if (entry) entry.setAttribute("aria-label", state.syncConfig ? "Sign in to the KBMS staff portal" : "Open the local KBMS demo workspace");
+    const signInRequired = Boolean(state.syncConfig || state.sharedDemoMode);
+    if (entry) entry.querySelector("span").textContent = state.sharedDemoMode ? "Demo staff sign in" : signInRequired ? "Staff sign in" : "Open demo workspace";
+    if (entry) entry.setAttribute("aria-label", state.sharedDemoMode ? "Sign in to the shared fictional demo" : signInRequired ? "Sign in to the KBMS staff portal" : "Open the local KBMS demo workspace");
+    const accessNote = byId("public-access-note");
+    if (accessNote) accessNote.textContent = state.sharedDemoMode
+      ? "Shared fictional records · Staff sign-in required"
+      : "Fictional sample records · Separate from school data";
+    const modeLabel = byId("demo-mode-label");
+    if (modeLabel) modeLabel.textContent = state.sharedDemoMode ? "SHARED DEMO · FICTIONAL DATA" : "DEMO · FICTIONAL DATA";
   }
 
   function setSyncStatus(kind, label) {
@@ -104,7 +113,7 @@
     indicator.className = `sync-indicator${kind === "pending" ? " pending" : kind === "error" ? " error" : ""}`;
     indicator.lastElementChild.textContent = label;
     byId("connection-label").textContent = state.session
-      ? "Cloud connected"
+      ? state.sharedDemoMode ? "Cloud demo connected" : "Cloud connected"
       : state.syncConfig ? "Sign-in required" : "Local demo";
     byId("auth-button").textContent = state.session ? "Sign out" : "Sign in";
     byId("user-label").textContent = state.staffRole ? `KBMS ${state.staffRole.replaceAll("_", " ")}` : "Library desk";
@@ -112,6 +121,10 @@
 
   function currentRole() {
     return state.session ? state.staffRole : state.offlineAuthorization?.role;
+  }
+
+  function canSeedSharedDemo() {
+    return state.sharedDemoMode && Boolean(state.session) && ["admin", "super_admin"].includes(currentRole());
   }
 
   function roleCanWriteTable(table) {
@@ -732,6 +745,11 @@
   }
 
   async function refresh() {
+    if (state.sharedDemoMode && !state.supabase) {
+      content.innerHTML = `<section class="panel panel-empty"><strong>Shared demo is not configured</strong><p>Ask the project administrator to apply the shared-demo migration and configure the Supabase connection.</p></section>`;
+      playPageEntrance();
+      return;
+    }
     if (state.syncConfig && !state.session) {
       content.innerHTML = `<section class="panel panel-empty"><strong>Sign in to access school records</strong><p>School records are hidden on this device until an authorized staff account is verified. The local-only demo is separate from the shared school workspace.</p><button class="button button-primary" type="button" id="signin-required-button">Sign in</button></section>`;
       byId("signin-required-button")?.addEventListener("click", showAuthDialog);
@@ -768,6 +786,36 @@
     const date = new Date();
     date.setDate(date.getDate() + days);
     return localDateIso(date);
+  }
+
+  function makeDemoAcademicYear() {
+    const year = new Date().getFullYear();
+    return { id: crypto.randomUUID(), year_label: String(year), starts_on: `${year}-01-01`, ends_on: `${year}-12-31`, is_current: true, status: "active", archived_at: null, created_at: new Date().toISOString() };
+  }
+
+  async function seedSharedDemoData(button) {
+    if (!canSeedSharedDemo() || !state.supabase) return;
+    if (!window.confirm("Add the prepared fictional dataset to the shared development workspace? All authorized accounts on this project will see these records. Existing records will not be deleted.")) return;
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    let seeded = false;
+    try {
+      const { data, error } = await state.supabase.rpc("seed_fictional_demo_v1");
+      if (error) throw error;
+      seeded = !data?.already_seeded;
+      notify(data?.already_seeded
+        ? "The fictional demo dataset is already in the shared workspace."
+        : "The fictional demo dataset was added to the shared workspace.");
+      await synchronizeFromServer();
+      await refresh();
+    } catch (error) {
+      notify(seeded
+        ? `The demo seed succeeded, but this device could not refresh the shared records: ${error.message}`
+        : error.message || "The fictional demo records could not be added.", true);
+    } finally {
+      button.disabled = false;
+      button.removeAttribute("aria-busy");
+    }
   }
 
   async function loadFictionalDemoData() {
@@ -957,8 +1005,11 @@
     if (students.length !== 1000 || copies.length !== 1040) {
       throw new Error("The demo upgrade expected the 1,000-student and 1,040-copy sample dataset. Reload the public demo to restore its prepared records.");
     }
-    const currentYear = years.find((year) => year.is_current) || years[0];
-    if (!currentYear) throw new Error("The demo academic year is missing.");
+    let currentYear = years.find((year) => year.is_current) || years[0];
+    if (!currentYear) {
+      currentYear = makeDemoAcademicYear();
+      await writeRecord("academic_years", currentYear);
+    }
     const upgradedClasses = [...classes];
     for (let index = 0; index < names.length; index += 1) {
       const label = `Grade 10 ${names[index]}`;
@@ -1090,8 +1141,11 @@
       getAll("school_classes"), getAll("academic_years"), getAll("students"),
     ]);
     const names = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa", "Lambda", "Mu", "Nu", "Xi", "Omicron", "Pi"];
-    const year = years.find((item) => item.is_current) || years[0];
-    if (!year) throw new Error("The demo academic year is missing.");
+    let year = years.find((item) => item.is_current) || years[0];
+    if (!year) {
+      year = makeDemoAcademicYear();
+      await writeRecord("academic_years", year);
+    }
     for (let index = 0; index < names.length; index += 1) {
       const label = "Grade 10 " + names[index];
       const existing = classes.find((item) => (item.class_label || item.display_name) === label && item.academic_year_id === year.id);
@@ -1127,6 +1181,7 @@
     const overdue = circulating.filter((loan) => loan.due_date && loan.due_date < localDateIso());
     const damaged = books.filter((book) => book.condition === "Damaged").length;
     const lost = books.filter((book) => book.condition === "Lost").length;
+    const canSeedDemo = canSeedSharedDemo();
     const streamRows = Object.entries(HOUSES).map(([code, label]) => {
       const studentMap = new Map(students.map((student) => [student.id, student]));
       const houseLoans = loans.filter((loan) => (loan.house_code_snapshot || studentMap.get(loan.student_id)?.house_code) === code);
@@ -1134,7 +1189,8 @@
       const rate = houseLoans.length ? Math.round((returned / houseLoans.length) * 100) : null;
       return `<div class="stream-row"><span class="stream-name">${code} · ${escapeHtml(label)}</span><div class="bar-track" aria-label="${rate === null ? "No lending records" : `${rate}% of loans returned`}"><div class="bar-fill" style="width:${rate || 0}%"></div></div><span class="stream-count">${rate === null ? "No loans" : `${rate}%`}</span></div>`;
     }).join("");
-    content.innerHTML = `${heading("MOI HIGH SCHOOL · KABARAK", "Books, in good order.", "A clear view of library circulation, textbook lending and student records.", `<button class="button button-primary" data-page-link="circulation">Record a loan</button>`)}
+    content.innerHTML = `${heading(state.sharedDemoMode ? "SHARED FICTIONAL DEMO" : "MOI HIGH SCHOOL · KABARAK", "Books, in good order.", "A clear view of library circulation, textbook lending and student records.", `<button class="button button-primary" data-page-link="circulation">Record a loan</button>`)}
+      ${state.sharedDemoMode ? `<section class="panel demo-warning quick-actions-panel"><div class="panel-header"><div><h2>Shared fictional demo data</h2><p>These records are stored in the development cloud project and visible to its authorized staff accounts.</p></div><span class="status-tag">Cloud workspace</span></div>${canSeedDemo ? `<div class="quick-actions"><button class="button button-secondary" data-action="seed-shared-demo">Seed about 3,000 fictional records</button></div>` : ""}</section>` : ""}
       <section class="stats-grid" aria-label="Live library metrics">
         ${statCard("ON LOAN", circulating.length, "Library copies currently with students")}
         ${statCard("OVERDUE", overdue.length, "Past a recorded return date")}
@@ -2673,7 +2729,7 @@
     state.syncConfig = config?.url && config?.anonKey ? config : null;
     if (!config || !config.url || !config.anonKey) {
       setPublicGate(false);
-      setSyncStatus("offline", "Local demo only");
+      setSyncStatus(state.sharedDemoMode ? "error" : "offline", state.sharedDemoMode ? "Cloud demo unavailable" : "Local demo only");
       return;
     }
     state.syncConfig = config;
@@ -2686,7 +2742,10 @@
     try {
       const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
       state.supabase = createClient(config.url, config.anonKey, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+        auth: {
+          persistSession: true, autoRefreshToken: true, detectSessionInUrl: true,
+          ...(state.sharedDemoMode ? { storageKey: "kbms-shared-demo-auth" } : {}),
+        },
       });
       const { data, error } = await state.supabase.auth.getSession();
       if (error) throw error;
@@ -3177,7 +3236,7 @@
     if (staffRow && !target) { openConnectedStaffAccount(staffRow); return; }
     if (!target) return;
     if (target.dataset.action === "public-enter") {
-      if (state.syncConfig) showAuthDialog();
+      if (state.syncConfig || state.sharedDemoMode) showAuthDialog();
       else { setPublicGate(false); await refresh(); }
     }
     if (target.hasAttribute("data-nav-section")) {
@@ -3246,6 +3305,7 @@
       byId("csv-import").click();
     }
     if (target.dataset.action === "bulk-allocate-textbooks" && canManageTextbookAllocations()) await bulkAllocateTextbooks();
+    if (target.dataset.action === "seed-shared-demo" && canSeedSharedDemo()) await seedSharedDemoData(target);
     if (target.dataset.action === "load-demo-data" && !state.syncConfig) {
       if (window.confirm("Load fictional demo students and books into this empty browser workspace? This will not use real school data.")) {
         try { await loadFictionalDemoData(); } catch (error) { notify(error.message || "Demo records could not be loaded.", true); }
@@ -3424,7 +3484,7 @@
       // This prevents cached student or borrowing records from entering the public DOM on first load.
       await connectSupabase();
       document.querySelectorAll(".nav-item[data-page]").forEach((item) => { item.title = item.textContent.trim(); item.setAttribute("aria-label", item.textContent.trim()); });
-      if (!state.syncConfig) {
+      if (!state.syncConfig && !state.sharedDemoMode) {
         const [students, books, copies, allocations] = await Promise.all([getAll("students"), getAll("books"), getAll("textbook_copies"), getAll("textbook_allocations")]);
         if (!students.length && !books.length && !copies.length && !allocations.length) await loadFictionalDemoData();
         await upgradeDemoScenario();

@@ -1,6 +1,6 @@
 # KBMS online teacher demo — Cloudflare Pages plan
 
-This package describes a **fictional-data demo only**. A shared demo is not provisioned by this repository change and must not connect to the school's staff/production database.
+This package describes fictional-data demos only. `/?demo=1` is browser-local. The optional `/?demo=cloud` route authenticates staff against the configured development Supabase project and stores the approved demo dataset there. Use it only after the project owner confirms the workspace is safe for shared fictional records; never point it at school production. A dedicated demo Supabase project remains the recommended setup for inviting external testers.
 
 ## Architecture
 
@@ -8,7 +8,7 @@ This package describes a **fictional-data demo only**. A shared demo is not prov
 - A separate, owner-approved Supabase project holds fictional demo records and demo-only staff accounts.
 - The Supabase publishable/anon key is public by design; database RLS and server-side RPC authorization remain mandatory. Never put a Supabase service-role key in the site.
 - Staff and demo deployments must use different Supabase projects and separately controlled Pages build environments.
-- The current `/?demo=1` experience is browser-local IndexedDB, not a multi-device shared backend.
+- `/?demo=1` uses browser-local IndexedDB; `/?demo=cloud` uses the configured Supabase backend and a separate browser cache/auth namespace.
 
 ## Build and environment
 
@@ -31,9 +31,9 @@ Review the generated `dist/config.js` target before deployment. `config.js` cont
 
 ## Shared demo requirements
 
-A shared reviewer experience requires a separate demo project, fictional-only seed data, role-tested RLS, demo-specific accounts, audited account lifecycle operations, rate limits and an approved reset/retention procedure. The existing normal staff account administration can be reused inside that isolated project. Do not provision demo users in the current staff project or point the public demo route at it.
+The cloud demo seed is an explicit, admin-only RPC that inserts fictional rows atomically, refuses known demo-ID collisions, and never deletes existing records. Authorized staff on the selected development project can see those rows. A dedicated demo project with fictional-only data, role-tested RLS, demo-specific accounts, audited account lifecycle operations, rate limits and an approved reset/retention procedure remains safer for external reviewers. Do not provision demo users in a school production project.
 
-See `SHARED-DEMO-READINESS.md` for current IndexedDB behavior, account flow review and a staged migration/acceptance checklist. Project creation, schema deployment, seeding, account provisioning and deployment require owner approval and are not performed by this build script.
+Apply `supabase/migrations/20261124154800_shared_demo_seed.sql` to the selected development project before opening `/?demo=cloud`. The full `schema.sql` also includes this migration. The project must already have the KBMS schema, deployed sign-in functions and an active admin account. The build script does not apply SQL, seed data, create accounts or deploy the site. See `SHARED-DEMO-READINESS.md` for the isolated-demo recommendation and acceptance checklist.
 
 ## Before sharing
 
