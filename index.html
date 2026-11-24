@@ -31,7 +31,7 @@
           <div class="public-hero-actions">
             <button class="button button-primary public-login-button" type="button" data-action="public-enter"><span>Staff sign in</span><span aria-hidden="true">→</span></button>
             
-            <span class="public-access-note">Fictional sample records · Separate from school data</span>
+            <span id="public-access-note" class="public-access-note">Fictional sample records · Separate from school data</span>
           </div>
         </div>
         <div class="public-hero-art" aria-label="KBMS brings the school's book services into one workspace">
@@ -74,23 +74,23 @@
           <img class="crest" src="./mhsk-crest.png" alt="Moi High School - Kabarak crest">
           <span class="brand-copy"><strong>KABARAK</strong><small>BOOK MANAGEMENT</small></span>
         </a></div>
-        <div class="nav-label">LIBRARY</div>
+        <button class="nav-label" type="button" data-nav-section aria-expanded="true" aria-controls="main-navigation">LIBRARY</button>
         <nav class="nav-list" id="main-navigation">
           <button class="nav-item active" data-page="dashboard"><span class="nav-icon">◫</span>Overview</button>
           <button class="nav-item" data-page="circulation"><span class="nav-icon">↔</span>Issue &amp; return</button>
           <button class="nav-item" data-page="inventory"><span class="nav-icon">▤</span>Library catalog</button>
         </nav>
-        <div class="nav-label nav-label-spaced">BOOKSTORE</div>
-        <nav class="nav-list">
+        <button class="nav-label nav-label-spaced" type="button" data-nav-section aria-expanded="true" aria-controls="bookstore-navigation">BOOKSTORE</button>
+        <nav class="nav-list" id="bookstore-navigation">
           <button class="nav-item" data-page="bookstore"><span class="nav-icon">▣</span>Textbook register</button>
           <button class="nav-item" data-page="bookstore-returns"><span class="nav-icon">↩</span>Process returns</button>
           <button class="nav-item" data-page="year-setup"><span class="nav-icon">▦</span>Academic year setup</button>
           <button class="nav-item" data-page="archives"><span class="nav-icon">▤</span>Archives</button>
         </nav>
-        <div class="nav-label nav-label-spaced">ADMINISTRATION</div>
-        <nav class="nav-list"><button class="nav-item" data-page="governance"><span class="nav-icon">⚑</span>Staff &amp; approvals</button></nav>
-        <div class="nav-label nav-label-spaced">STUDENTS</div>
-        <nav class="nav-list">
+        <button class="nav-label nav-label-spaced" type="button" data-nav-section aria-expanded="true" aria-controls="administration-navigation">ADMINISTRATION</button>
+        <nav class="nav-list" id="administration-navigation"><button class="nav-item" data-page="governance"><span class="nav-icon">⚑</span>Staff &amp; approvals</button></nav>
+        <button class="nav-label nav-label-spaced" type="button" data-nav-section aria-expanded="true" aria-controls="students-navigation">STUDENTS</button>
+        <nav class="nav-list" id="students-navigation">
           <button class="nav-item" data-page="students"><span class="nav-icon">♙</span>Student register</button>
           <button class="nav-item" data-page="reports"><span class="nav-icon">✓</span>Clearance &amp; reports</button>
         </nav>
@@ -106,17 +106,19 @@
           <button class="mobile-nav-toggle" id="mobile-nav-toggle" type="button" data-action="mobile-nav-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="main-navigation"><span></span><span></span><span></span></button>
           <div class="breadcrumb"><span>KABARAK BOOK MANAGEMENT</span><span class="crumb-slash">/</span><strong id="page-name">Overview</strong></div>
           <div class="global-search"><label class="global-search-field"><span class="global-search-icon" aria-hidden="true">⌕</span><input id="global-search" type="search" autocomplete="off" placeholder="Search students, books, classes…" aria-label="Search KBMS records"><kbd>Ctrl K</kbd></label><div id="global-search-results" class="global-search-results" hidden></div></div>
-          <div class="top-actions"><span class="demo-mode-label">DEMO · FICTIONAL DATA</span><span id="sync-indicator" class="sync-indicator"><span class="status-dot"></span><span>Offline ready</span></span><span id="today-label" class="date-label"></span><button id="install-button" class="button button-secondary button-small" type="button" hidden>Install app</button></div>
+          <div class="top-actions"><span id="demo-mode-label" class="demo-mode-label">DEMO · FICTIONAL DATA</span><span id="today-label" class="date-label"></span><button id="install-button" class="button button-secondary button-small" type="button" hidden>Install app</button><span id="sync-indicator" class="sync-indicator"><span class="status-dot"></span><span>Offline ready</span></span></div>
         </header>
         <div id="app-content" class="content-area" tabindex="-1"></div>
         <footer class="app-footer"><span>MOI HIGH SCHOOL - KABARAK</span><span>BOOK MANAGEMENT · <button data-legal="privacy" class="footer-link">Privacy</button> · <button data-legal="terms" class="footer-link">Terms</button></span></footer>
       </main>
     </div>
     <dialog id="form-dialog" class="dialog"><form id="dialog-form" method="dialog"><div class="dialog-head"><div><span class="eyebrow" id="dialog-eyebrow">LIBRARY RECORD</span><h2 id="dialog-title">Record details</h2></div><button class="icon-button" type="submit" value="cancel" aria-label="Close dialog">×</button></div><div id="dialog-fields" class="form-fields"></div><div class="dialog-actions"><button class="button button-secondary" type="submit" value="cancel">Cancel</button><button class="button button-primary" id="dialog-submit" type="submit" value="save">Save record</button></div></form></dialog>
+    <dialog id="staff-account-dialog" class="dialog staff-account-dialog" aria-labelledby="staff-account-title"><div class="dialog-head"><div><span class="eyebrow">STAFF ACCOUNT</span><h2 id="staff-account-title"></h2></div><button class="icon-button" type="button" data-close-staff-account aria-label="Close account details">×</button></div><div id="staff-account-details"></div><div id="staff-account-actions" class="staff-account-actions" role="group" aria-label="Account actions"></div></dialog>
     <dialog id="legal-dialog" class="dialog legal-dialog"><div class="dialog-head"><div><span class="eyebrow">MOI HIGH SCHOOL · KABARAK</span><h2 id="legal-title"></h2></div><button class="icon-button" id="legal-close" type="button" aria-label="Close dialog">×</button></div><div id="legal-content" class="legal-content"></div></dialog>
     <dialog id="auth-dialog" class="dialog auth-dialog"><form id="auth-form" method="dialog" novalidate><div class="dialog-head"><div class="auth-identity"><img class="auth-crest" src="./mhsk-crest.png" alt=""><div><span class="eyebrow">MOI HIGH SCHOOL · KABARAK</span><h2>Staff sign in</h2></div></div><button class="icon-button" type="submit" value="cancel" aria-label="Close sign-in">×</button></div><p class="form-note">Use the username and password issued by your school administrator.</p><label class="field"><span>Username</span><input name="username" type="text" autocomplete="username" required maxlength="32"></label><label class="field"><span>Password</span><input name="password" type="password" autocomplete="current-password" required></label><p class="form-error" id="auth-error" aria-live="polite"></p><div class="dialog-actions"><button class="button button-secondary" type="submit" value="cancel">Cancel</button><button class="button button-primary" id="auth-submit" type="submit" value="login">Sign in</button></div></form></dialog>
     <dialog id="signin-transition" class="signin-transition" aria-labelledby="signin-transition-title" aria-describedby="signin-quote">
       <div class="signin-transition-content">
+        <img class="signin-crest" src="./mhsk-crest.png" alt="">
         <span class="signin-spinner" aria-hidden="true"></span><p class="eyebrow">KABARAK BOOK MANAGEMENT</p>
         <h2 id="signin-transition-title">Preparing your workspace</h2><p class="signin-transition-status">Verifying your account and syncing records</p>
         <blockquote id="signin-quote" class="signin-quote">Learning is a journey. Keep turning the page.</blockquote><span class="signin-transition-foot">MOI HIGH SCHOOL · KABARAK</span>

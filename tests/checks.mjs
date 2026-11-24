@@ -8,6 +8,7 @@ const read = (file) => readFileSync(resolve(root, file), "utf8");
 const requiredFiles = [
   "index.html", "styles.css", "responsive.css", "spacious.css", "app.js", "config.js",
   "sw.js", "manifest.json", "xlsx-export.js", "scripts/build-cloudflare.sh",
+  "supabase/migrations/20261124154800_shared_demo_seed.sql",
 ];
 for (const file of requiredFiles) {
   assert.ok(existsSync(resolve(root, file)), `Required application asset is missing: ${file}`);
@@ -19,6 +20,7 @@ const responsiveCss = read("responsive.css");
 const config = read("config.js");
 const serviceWorker = read("sw.js");
 const buildScript = read("scripts/build-cloudflare.sh");
+const sharedDemoMigration = read("supabase/migrations/20261124154800_shared_demo_seed.sql");
 const manifest = JSON.parse(read("manifest.json"));
 
 assert.match(html, /<html\s+lang="en"/i, "The document should declare its language.");
@@ -44,14 +46,21 @@ assert.ok(html.indexOf('<link rel="stylesheet" href="./styles.css">') < html.ind
 assert.ok(html.includes('<link rel="stylesheet" href="./spacious.css">'), "The roomier luxury-minimal stylesheet must be linked.");
 assert.match(buildScript, /responsiveLink\s*=\s*'<link rel="stylesheet" href="\.\/responsive\.css">'/,
   "The production build should preserve or inject the responsive stylesheet link.");
-assert.match(buildScript, /SUPABASE_URL:\?Set SUPABASE_URL/, "Builds must require an explicit backend URL, not silently use a project fallback.");
-assert.match(buildScript, /SUPABASE_ANON_KEY:\?Set SUPABASE_ANON_KEY/, "Builds must require an explicit publishable key.");
+assert.match(buildScript, /CONFIG_MODE="repository"/, "Builds must support the checked-in runtime config when Pages omits build variables.");
+assert.match(buildScript, /CONFIG_MODE="environment"/, "Explicit Pages build variables must override repository config.");
+assert.match(buildScript, /vm\.runInNewContext/, "Repository runtime config must be evaluated and validated before packaging.");
+assert.match(buildScript, /service[_-]?role/i, "The build must reject service-role credentials.");
 assert.match(buildScript, /cp index\.html app\.js styles\.css responsive\.css spacious\.css/, "The build must package the spacious stylesheet.");
 assert.match(serviceWorker, /"\.\/spacious\.css"/, "The service worker must precache the spacious stylesheet.");
-assert.match(serviceWorker, /mhsk-kbms-v42/, "The service-worker cache version should match the current release.");
+assert.match(serviceWorker, /mhsk-kbms-v43/, "The service-worker cache version should match the current release.");
 assert.match(serviceWorker, /explicitlyLinked/, "The worker must avoid duplicate stylesheet injection in built output.");
 assert.ok(Array.isArray(manifest.icons) && manifest.icons.length > 0, "The installable app manifest needs an icon.");
 assert.match(config, /window\.BOOKSTORE_CONFIG\s*=/, "Runtime configuration must be initialized.");
+assert.match(read("app.js"), /SHARED_DEMO_MODE/, "The shared demo route must be explicit and separate from local demo mode.");
+assert.match(sharedDemoMigration, /create or replace function public\.seed_fictional_demo_v1\(\)/, "The shared demo seed must run through a server function.");
+assert.match(sharedDemoMigration, /kbms_has_role\(array\['admin','super_admin'\]\)/, "Only administrators may seed shared demo records.");
+assert.match(sharedDemoMigration, /pg_advisory_xact_lock/, "Concurrent seed requests must be serialized.");
+assert.doesNotMatch(sharedDemoMigration, /\b(?:delete|truncate)\s+from\s+public\./i, "The demo seed must never remove existing school records.");
 
 for (const [, asset] of html.matchAll(/\b(?:src|href)=["'](\.[^"']*)["']/g)) {
   const pathname = asset.split(/[?#]/, 1)[0];

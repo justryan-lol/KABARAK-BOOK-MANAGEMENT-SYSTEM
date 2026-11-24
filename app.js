@@ -6,8 +6,10 @@
     NB: "Nzoia Boys", NG: "Nzoia Girls", MB: "Mara Boys", MG: "Mara Girls",
   };
   const BOOK_CODE = /^[A-Z0-9][A-Z0-9._/-]{0,79}$/i;
-  const DEMO_MODE = new URLSearchParams(window.location.search).get("demo") === "1";
-  const DB_NAME = DEMO_MODE ? "mhsk-bookstore-demo" : "mhsk-bookstore";
+  const demoRoute = new URLSearchParams(window.location.search).get("demo");
+  const DEMO_MODE = demoRoute === "1";
+  const SHARED_DEMO_MODE = demoRoute === "cloud";
+  const DB_NAME = SHARED_DEMO_MODE ? "mhsk-bookstore-cloud-demo" : DEMO_MODE ? "mhsk-bookstore-demo" : "mhsk-bookstore";
   const DB_VERSION = 10;
   const PAGE_NAMES = {
     dashboard: "Overview", circulation: "Issue & return", inventory: "Library catalog",
@@ -26,7 +28,7 @@
   ]);
   const state = {
     page: "dashboard", db: null, supabase: null, session: null, staffRole: null, offlineAuthorization: null, syncConfig: null, sessionTask: null, channel: null,
-    selectedClassId: "", classRosterQuery: "", governanceQuery: "", globalSearchTask: 0, demoMode: DEMO_MODE,
+    selectedClassId: "", classRosterQuery: "", governanceQuery: "", globalSearchTask: 0, demoMode: DEMO_MODE, sharedDemoMode: SHARED_DEMO_MODE,
     inventoryQuery: "", studentQuery: "", bookstoreReturnQuery: "", inventoryFilter: "all", inventoryView: "table", studentFilter: "all", textbookQuery: "",
     circulationMode: "issue", deferredInstall: null, syncing: false, remoteRefreshTimer: null, pageTransitionRequested: false,
   };
@@ -95,8 +97,15 @@
     shell.hidden = showWelcome;
     document.body.classList.toggle("auth-pending", showWelcome);
     const entry = welcome.querySelector('[data-action="public-enter"]');
-    if (entry) entry.querySelector("span").textContent = state.syncConfig ? "Staff sign in" : "Open demo workspace";
-    if (entry) entry.setAttribute("aria-label", state.syncConfig ? "Sign in to the KBMS staff portal" : "Open the local KBMS demo workspace");
+    const signInRequired = Boolean(state.syncConfig || state.sharedDemoMode);
+    if (entry) entry.querySelector("span").textContent = state.sharedDemoMode ? "Demo staff sign in" : signInRequired ? "Staff sign in" : "Open demo workspace";
+    if (entry) entry.setAttribute("aria-label", state.sharedDemoMode ? "Sign in to the shared fictional demo" : signInRequired ? "Sign in to the KBMS staff portal" : "Open the local KBMS demo workspace");
+    const accessNote = byId("public-access-note");
+    if (accessNote) accessNote.textContent = state.sharedDemoMode
+      ? "Shared fictional records · Staff sign-in required"
+      : "Fictional sample records · Separate from school data";
+    const modeLabel = byId("demo-mode-label");
+    if (modeLabel) modeLabel.textContent = state.sharedDemoMode ? "SHARED DEMO · FICTIONAL DATA" : "DEMO · FICTIONAL DATA";
   }
 
   function setSyncStatus(kind, label) {
@@ -104,14 +113,18 @@
     indicator.className = `sync-indicator${kind === "pending" ? " pending" : kind === "error" ? " error" : ""}`;
     indicator.lastElementChild.textContent = label;
     byId("connection-label").textContent = state.session
-      ? "Synchronized workspace"
-      : state.syncConfig ? "Sign-in required" : "Local demo only";
+      ? state.sharedDemoMode ? "Cloud demo connected" : "Cloud connected"
+      : state.syncConfig ? "Sign-in required" : "Local demo";
     byId("auth-button").textContent = state.session ? "Sign out" : "Sign in";
     byId("user-label").textContent = state.staffRole ? `KBMS ${state.staffRole.replaceAll("_", " ")}` : "Library desk";
   }
 
   function currentRole() {
     return state.session ? state.staffRole : state.offlineAuthorization?.role;
+  }
+
+  function canSeedSharedDemo() {
+    return state.sharedDemoMode && Boolean(state.session) && ["admin", "super_admin"].includes(currentRole());
   }
 
   function roleCanWriteTable(table) {
@@ -538,11 +551,8 @@
         const admission = csvValue(row, indexes, ["admission_number", "admission", "adm_no", "adm_number", "student_id"]);
         const name = csvValue(row, indexes, ["full_name", "student_name", "name"]);
         const houseInput = csvValue(row, indexes, ["house_code", "house"]);
-        const sectionInput = (csvValue(row, indexes, ["school_section", "section", "stream_code"]) || targetClass?.school_section || "").toUpperCase();
         const houseCode = Object.keys(HOUSES).find((code) => code.toLowerCase() === houseInput.toLowerCase())
-          || Object.keys(HOUSES).find((code) => HOUSES[code].toLowerCase() === houseInput.toLowerCase())
-          || Object.keys(HOUSES).find((code) => Boolean(sectionInput) && code[0] === houseInput.toUpperCase() && code[1] === sectionInput)
-          || Object.keys(HOUSES).find((code) => Boolean(sectionInput) && HOUSES[code].startsWith(houseInput) && code[1] === sectionInput);
+          || Object.keys(HOUSES).find((code) => HOUSES[code].toLowerCase() === houseInput.toLowerCase());
         const grade = targetClass?.grade_label || csvValue(row, indexes, ["grade", "form", "year_group"]);
         const classLabel = targetClass?.class_label || targetClass?.display_name || csvValue(row, indexes, ["current_class", "class_name", "class_label", "class", "stream"]);
         const classInput = csvValue(row, indexes, ["class_number", "class_no", "stream_number"]);
@@ -556,7 +566,6 @@
         else if (knownAdmissions.has(admission.toLowerCase())) issue = "duplicate admission number";
         else if (name.length < 2 || name.length > 160) issue = "missing or invalid student name";
         else if (!houseCode) issue = "house must match one of the school house codes or names";
-        else if (targetClass?.school_section && houseCode[1] !== targetClass.school_section) issue = `house does not belong to the selected ${targetClass.school_section} section`;
         else if ((!grade && !classLabel) || grade.length > 40 || classLabel.length > 100) issue = "grade or class label is missing or too long";
         else if ((classInput || /^class\s*\d+$/i.test(classLabel)) && (!Number.isInteger(classNumber) || classNumber < 1 || classNumber > 999)) issue = "class number must be from 1 to 999";
         if (issue) {
@@ -736,6 +745,11 @@
   }
 
   async function refresh() {
+    if (state.sharedDemoMode && !state.supabase) {
+      content.innerHTML = `<section class="panel panel-empty"><strong>Shared demo is not configured</strong><p>Ask the project administrator to apply the shared-demo migration and configure the Supabase connection.</p></section>`;
+      playPageEntrance();
+      return;
+    }
     if (state.syncConfig && !state.session) {
       content.innerHTML = `<section class="panel panel-empty"><strong>Sign in to access school records</strong><p>School records are hidden on this device until an authorized staff account is verified. The local-only demo is separate from the shared school workspace.</p><button class="button button-primary" type="button" id="signin-required-button">Sign in</button></section>`;
       byId("signin-required-button")?.addEventListener("click", showAuthDialog);
@@ -772,6 +786,36 @@
     const date = new Date();
     date.setDate(date.getDate() + days);
     return localDateIso(date);
+  }
+
+  function makeDemoAcademicYear() {
+    const year = new Date().getFullYear();
+    return { id: crypto.randomUUID(), year_label: String(year), starts_on: `${year}-01-01`, ends_on: `${year}-12-31`, is_current: true, status: "active", archived_at: null, created_at: new Date().toISOString() };
+  }
+
+  async function seedSharedDemoData(button) {
+    if (!canSeedSharedDemo() || !state.supabase) return;
+    if (!window.confirm("Add the prepared fictional dataset to the shared development workspace? All authorized accounts on this project will see these records. Existing records will not be deleted.")) return;
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    let seeded = false;
+    try {
+      const { data, error } = await state.supabase.rpc("seed_fictional_demo_v1");
+      if (error) throw error;
+      seeded = !data?.already_seeded;
+      notify(data?.already_seeded
+        ? "The fictional demo dataset is already in the shared workspace."
+        : "The fictional demo dataset was added to the shared workspace.");
+      await synchronizeFromServer();
+      await refresh();
+    } catch (error) {
+      notify(seeded
+        ? `The demo seed succeeded, but this device could not refresh the shared records: ${error.message}`
+        : error.message || "The fictional demo records could not be added.", true);
+    } finally {
+      button.disabled = false;
+      button.removeAttribute("aria-busy");
+    }
   }
 
   async function loadFictionalDemoData() {
@@ -961,8 +1005,11 @@
     if (students.length !== 1000 || copies.length !== 1040) {
       throw new Error("The demo upgrade expected the 1,000-student and 1,040-copy sample dataset. Reload the public demo to restore its prepared records.");
     }
-    const currentYear = years.find((year) => year.is_current) || years[0];
-    if (!currentYear) throw new Error("The demo academic year is missing.");
+    let currentYear = years.find((year) => year.is_current) || years[0];
+    if (!currentYear) {
+      currentYear = makeDemoAcademicYear();
+      await writeRecord("academic_years", currentYear);
+    }
     const upgradedClasses = [...classes];
     for (let index = 0; index < names.length; index += 1) {
       const label = `Grade 10 ${names[index]}`;
@@ -1094,8 +1141,11 @@
       getAll("school_classes"), getAll("academic_years"), getAll("students"),
     ]);
     const names = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa", "Lambda", "Mu", "Nu", "Xi", "Omicron", "Pi"];
-    const year = years.find((item) => item.is_current) || years[0];
-    if (!year) throw new Error("The demo academic year is missing.");
+    let year = years.find((item) => item.is_current) || years[0];
+    if (!year) {
+      year = makeDemoAcademicYear();
+      await writeRecord("academic_years", year);
+    }
     for (let index = 0; index < names.length; index += 1) {
       const label = "Grade 10 " + names[index];
       const existing = classes.find((item) => (item.class_label || item.display_name) === label && item.academic_year_id === year.id);
@@ -1131,6 +1181,7 @@
     const overdue = circulating.filter((loan) => loan.due_date && loan.due_date < localDateIso());
     const damaged = books.filter((book) => book.condition === "Damaged").length;
     const lost = books.filter((book) => book.condition === "Lost").length;
+    const canSeedDemo = canSeedSharedDemo();
     const streamRows = Object.entries(HOUSES).map(([code, label]) => {
       const studentMap = new Map(students.map((student) => [student.id, student]));
       const houseLoans = loans.filter((loan) => (loan.house_code_snapshot || studentMap.get(loan.student_id)?.house_code) === code);
@@ -1138,7 +1189,8 @@
       const rate = houseLoans.length ? Math.round((returned / houseLoans.length) * 100) : null;
       return `<div class="stream-row"><span class="stream-name">${code} · ${escapeHtml(label)}</span><div class="bar-track" aria-label="${rate === null ? "No lending records" : `${rate}% of loans returned`}"><div class="bar-fill" style="width:${rate || 0}%"></div></div><span class="stream-count">${rate === null ? "No loans" : `${rate}%`}</span></div>`;
     }).join("");
-    content.innerHTML = `${heading("MOI HIGH SCHOOL · KABARAK", "Books, in good order.", "A clear view of library circulation, textbook lending and student records.", `<button class="button button-primary" data-page-link="circulation">Record a loan</button>`)}
+    content.innerHTML = `${heading(state.sharedDemoMode ? "SHARED FICTIONAL DEMO" : "MOI HIGH SCHOOL · KABARAK", "Books, in good order.", "A clear view of library circulation, textbook lending and student records.", `<button class="button button-primary" data-page-link="circulation">Record a loan</button>`)}
+      ${state.sharedDemoMode ? `<section class="panel demo-warning quick-actions-panel"><div class="panel-header"><div><h2>Shared fictional demo data</h2><p>These records are stored in the development cloud project and visible to its authorized staff accounts.</p></div><span class="status-tag">Cloud workspace</span></div>${canSeedDemo ? `<div class="quick-actions"><button class="button button-secondary" data-action="seed-shared-demo">Seed about 3,000 fictional records</button></div>` : ""}</section>` : ""}
       <section class="stats-grid" aria-label="Live library metrics">
         ${statCard("ON LOAN", circulating.length, "Library copies currently with students")}
         ${statCard("OVERDUE", overdue.length, "Past a recorded return date")}
@@ -1648,6 +1700,26 @@
       <section class="panel" style="margin-top:16px"><div class="panel-header"><div><h2>Principal approval queue</h2><p>Requests, decisions and reasons are retained in the local demonstration history.</p></div></div><div class="table-wrap"><table><thead><tr><th>Request</th><th>Submitted by</th><th>Requested</th><th>Status</th><th>Decision</th></tr></thead><tbody>${approvals.length ? byNewest(approvals).map((item) => `<tr><td><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.description || "")}</small></td><td>${escapeHtml(item.requested_by_label || "Demo staff")}</td><td>${escapeHtml(item.requested_at || "—")}</td><td><span class="status-tag ${item.status === "approved" ? "good" : item.status === "rejected" ? "danger" : "warn"}">${escapeHtml(item.status)}</span></td><td>${item.status === "pending" ? `<button class="footer-link" data-decide-demo-approval="${escapeHtml(item.id)}" data-decision="approved">Approve</button> · <button class="footer-link" data-decide-demo-approval="${escapeHtml(item.id)}" data-decision="rejected">Reject</button>` : `${escapeHtml(item.decision_note || "Decision recorded")}`}</td></tr>`).join("") : `<tr><td colspan="5" class="table-empty">No approval requests.</td></tr>`}</tbody></table></div></section>`;
   }
 
+  function openConnectedStaffAccount(row) {
+    const profile = row.cells[0];
+    const userId = row.dataset.staffAccount;
+    const active = row.dataset.staffActive === "true";
+    byId("staff-account-title").textContent = profile.querySelector("strong").textContent;
+    byId("staff-account-details").innerHTML = `
+      <dl class="staff-account-details-list">
+        <div><dt>Username</dt><dd>${escapeHtml(row.cells[1].textContent.trim() || "—")}</dd></div>
+        <div><dt>Role</dt><dd>${escapeHtml(row.cells[2].textContent.trim() || "—")}</dd></div>
+        <div><dt>Staff number / department</dt><dd>${escapeHtml(profile.querySelector("small")?.textContent.trim() || "—")}</dd></div>
+        <div><dt>Status</dt><dd><span class="status-tag ${active ? "good" : "danger"}">${active ? "Active" : "Inactive"}</span></dd></div>
+      </dl>`;
+    byId("staff-account-actions").innerHTML = userId === state.session.user.id
+      ? "<p class=\"inline-hint\">This is your signed-in account.</p>"
+      : `<button class="button button-secondary" data-staff-action="reset_password" data-user-id="${escapeHtml(userId)}">Reset password</button>
+        <button class="button button-secondary" data-staff-action="change_role" data-user-id="${escapeHtml(userId)}">Change role</button>
+        <button class="button ${active ? "button-danger" : "button-secondary"}" data-staff-action="${active ? "deactivate" : "activate"}" data-user-id="${escapeHtml(userId)}">${active ? "Deactivate" : "Activate"}</button>`;
+    byId("staff-account-dialog").showModal();
+  }
+
   async function renderConnectedGovernance() {
     const role = currentRole();
     const isAdmin = ["admin", "super_admin"].includes(role);
@@ -1676,8 +1748,8 @@
     const toolbar = `${isAdmin ? '<button class="button button-secondary" data-action="add-staff-account">Create staff account</button>' : ''}${canConfigureSchool ? '<button class="button button-secondary" data-action="add-academic-year">Add academic year</button><button class="button button-secondary" data-action="add-school-class">Add class</button><button class="button button-secondary" data-action="add-school-subject">Add subject</button><button class="button button-secondary" data-action="add-teacher-assignment">Assign teacher</button>' : ''}<button class="button button-primary" data-action="request-approval">New approval request</button>`;
     content.innerHTML = `${heading("SCHOOL ADMINISTRATION", "Staff & approvals", "Connected school workspace. Staff access, assignments and approval decisions are checked by the server.", toolbar)}
       <section class="stats-grid">${statCard("PENDING APPROVALS", approvals.filter((item) => item.status === "pending").length, "Awaiting an authorized decision")}${statCard("RECORDED REQUESTS", approvals.length, "Approval history")}${isAdmin ? statCard("STAFF ACCOUNTS", staff.length, "Provisioned accounts") : statCard("YOUR ROLE", escapeHtml(role || "Staff"), "Server-verified role")}${canConfigureSchool ? statCard("ACTIVE TEACHER LINKS", assignments.filter((item) => !item.ends_on || item.ends_on >= localDateIso()).length, "Date-aware assignments") : ""}</section>
-      ${isAdmin ? `<section class="panel"><div class="panel-header"><div><h2>Staff directory</h2><p>Temporary passwords are shown only once when an account is created or reset.</p></div></div><div class="table-wrap"><table><thead><tr><th>Staff</th><th>Username</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody>${staff.length ? staff.map((person) => { const membership = memberships.get(person.user_id); return `<tr><td><strong>${escapeHtml(person.display_name)}</strong><small>${escapeHtml(person.staff_number || person.department || "")}</small></td><td class="code-text">${escapeHtml(person.username || "—")}</td><td>${escapeHtml(membership?.role || "No role")}</td><td><span class="status-tag ${person.active && membership?.active ? "good" : "danger"}">${person.active && membership?.active ? "Active" : "Inactive"}</span></td><td>${person.user_id === state.session.user.id ? "Current account" : `<button class="footer-link" data-staff-action="reset_password" data-user-id="${escapeHtml(person.user_id)}">Reset password</button> · <button class="footer-link" data-staff-action="change_role" data-user-id="${escapeHtml(person.user_id)}">Change role</button> · <button class="footer-link" data-staff-action="${person.active && membership?.active ? "deactivate" : "activate"}" data-user-id="${escapeHtml(person.user_id)}">${person.active && membership?.active ? "Deactivate" : "Activate"}</button>`}</td></tr>`; }).join("") : `<tr><td colspan="5" class="table-empty">No staff accounts found.</td></tr>`}</tbody></table></div></section>` : ""}
-      ${canConfigureSchool ? `<section class="panel" style="margin-top:16px"><div class="panel-header"><div><h2>Academic years, classes & subjects</h2><p>Set the active year and maintain the school's configurable class and subject directory.</p></div></div><div class="table-wrap"><table><thead><tr><th>Academic year</th><th>Dates</th><th>Status</th><th></th></tr></thead><tbody>${years.length ? years.map((year) => `<tr><td><strong>${escapeHtml(year.year_label)}</strong></td><td>${escapeHtml(year.starts_on || "—")} → ${escapeHtml(year.ends_on || "—")}</td><td><span class="status-tag ${year.is_current ? "good" : ""}">${year.is_current ? "Current" : escapeHtml(year.status)}</span></td><td>${!year.is_current ? `<button class="footer-link" data-set-current-year="${escapeHtml(year.id)}">Make current</button>` : ""}</td></tr>`).join("") : `<tr><td colspan="4" class="table-empty">No academic years configured.</td></tr>`}</tbody></table></div><div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Grade</th><th>Class label (must match student register)</th><th>Section</th><th>Academic year</th></tr></thead><tbody>${classes.length ? classes.map((item) => `<tr><td>${escapeHtml(item.grade_label)}</td><td>${escapeHtml(item.class_label)}</td><td>${escapeHtml(item.school_section || "Both / not set")}</td><td>${escapeHtml(years.find((year) => year.id === item.academic_year_id)?.year_label || "—")}</td></tr>`).join("") : `<tr><td colspan="4" class="table-empty">No classes configured.</td></tr>`}</tbody></table></div><div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Subject code</th><th>Subject name</th><th>Status</th></tr></thead><tbody>${subjects.length ? subjects.map((item) => `<tr><td class="code-text">${escapeHtml(item.subject_code)}</td><td>${escapeHtml(item.subject_name)}</td><td>${item.active ? "Active" : "Inactive"}</td></tr>`).join("") : `<tr><td colspan="3" class="table-empty">No subjects configured.</td></tr>`}</tbody></table></div></section>
+      ${isAdmin ? `<section class="panel"><div class="panel-header"><div><h2>Staff directory</h2><p>Temporary passwords are shown only once when an account is created or reset.</p></div></div><div class="table-wrap"><table><thead><tr><th>Staff</th><th>Username</th><th>Role</th></tr></thead><tbody>${staff.length ? staff.map((person) => { const membership = memberships.get(person.user_id); const active = Boolean(person.active && membership?.active); return `<tr class="staff-account-row" data-staff-account="${escapeHtml(person.user_id)}" data-staff-active="${active}"><td><button type="button" class="staff-account-open" data-select-staff="${escapeHtml(person.user_id)}"><strong>${escapeHtml(person.display_name)}</strong><small>${escapeHtml(person.staff_number || person.department || "")}</small></button></td><td class="code-text">${escapeHtml(person.username || "—")}</td><td>${escapeHtml(membership?.role || "No role")}</td></tr>`; }).join("") : `<tr><td colspan="3" class="table-empty">No staff accounts found.</td></tr>`}</tbody></table></div></section>` : ""}
+      ${canConfigureSchool ? `<section class="panel" style="margin-top:16px"><div class="panel-header"><div><h2>Academic years, classes & subjects</h2><p>Set the active year and maintain the school's configurable class and subject directory.</p></div></div><div class="table-wrap"><table><thead><tr><th>Academic year</th><th>Dates</th><th>Status</th><th></th></tr></thead><tbody>${years.length ? years.map((year) => `<tr><td><strong>${escapeHtml(year.year_label)}</strong></td><td>${escapeHtml(year.starts_on || "—")} → ${escapeHtml(year.ends_on || "—")}</td><td><span class="status-tag ${year.is_current ? "good" : ""}">${year.is_current ? "Current" : escapeHtml(year.status)}</span></td><td>${!year.is_current ? `<button class="footer-link" data-set-current-year="${escapeHtml(year.id)}">Make current</button>` : ""}</td></tr>`).join("") : `<tr><td colspan="4" class="table-empty">No academic years configured.</td></tr>`}</tbody></table></div><div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Grade</th><th>Class label (must match student register)</th><th>Academic year</th></tr></thead><tbody>${classes.length ? classes.map((item) => `<tr><td>${escapeHtml(item.grade_label)}</td><td>${escapeHtml(item.class_label)}</td><td>${escapeHtml(years.find((year) => year.id === item.academic_year_id)?.year_label || "—")}</td></tr>`).join("") : `<tr><td colspan="3" class="table-empty">No classes configured.</td></tr>`}</tbody></table></div><div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Subject code</th><th>Subject name</th><th>Status</th></tr></thead><tbody>${subjects.length ? subjects.map((item) => `<tr><td class="code-text">${escapeHtml(item.subject_code)}</td><td>${escapeHtml(item.subject_name)}</td><td>${item.active ? "Active" : "Inactive"}</td></tr>`).join("") : `<tr><td colspan="3" class="table-empty">No subjects configured.</td></tr>`}</tbody></table></div></section>
       <section class="panel" style="margin-top:16px"><div class="panel-header"><div><h2>Teacher assignments</h2><p>Assignments are date-aware and remain in history when ended. Class labels and subjects must match the student and textbook registers.</p></div></div><div class="table-wrap"><table><thead><tr><th>Teacher</th><th>Assignment</th><th>Class</th><th>Subject</th><th>From</th><th>Until</th><th></th></tr></thead><tbody>${assignments.length ? assignments.map((item) => `<tr><td>${escapeHtml(staffMap.get(item.staff_user_id)?.display_name || "Staff account")}</td><td>${escapeHtml(item.assignment_type.replaceAll("_", " "))}</td><td>${escapeHtml(classMap.get(item.class_id)?.class_label || "—")}</td><td>${escapeHtml(subjectMap.get(item.subject_id)?.subject_name || "Class-wide")}</td><td>${escapeHtml(item.starts_on)}</td><td>${escapeHtml(item.ends_on || "Current")}</td><td>${!item.ends_on ? `<button class="footer-link" data-end-staff-assignment="${escapeHtml(item.id)}">End assignment</button>` : ""}</td></tr>`).join("") : `<tr><td colspan="7" class="table-empty">No teacher assignments recorded.</td></tr>`}</tbody></table></div></section>` : ""}
       <section class="panel" style="margin-top:16px"><div class="panel-header"><div><h2>Principal approval queue</h2><p>Approval reasons, decisions and timestamps are stored in the server audit history.</p></div></div><div class="table-wrap"><table><thead><tr><th>Request</th><th>Requested by</th><th>Type</th><th>Submitted</th><th>Status</th><th>Decision</th></tr></thead><tbody>${approvals.length ? approvals.map((item) => `<tr><td><strong>${escapeHtml(item.request_reason)}</strong><small>${escapeHtml(item.target_table)}${item.target_id ? ` · ${escapeHtml(item.target_id)}` : ""}</small></td><td class="code-text">${escapeHtml(String(item.requested_by).slice(0, 8))}</td><td>${escapeHtml(item.request_type.replaceAll("_", " "))}</td><td>${escapeHtml(item.requested_at ? new Date(item.requested_at).toLocaleString("en-KE", { timeZone: "Africa/Nairobi" }) : "—")}</td><td><span class="status-tag ${item.status === "approved" ? "good" : item.status === "rejected" ? "danger" : "warn"}">${escapeHtml(item.status)}</span></td><td>${item.status === "pending" && canApprove && item.requested_by !== state.session.user.id ? `<button class="footer-link" data-approval-id="${escapeHtml(item.id)}" data-decision="approved">Approve</button> · <button class="footer-link" data-approval-id="${escapeHtml(item.id)}" data-decision="rejected">Reject</button>` : escapeHtml(item.decision_note || (item.status === "pending" ? "Awaiting approver" : "Decision recorded"))}</td></tr>`).join("") : `<tr><td colspan="6" class="table-empty">No approval requests.</td></tr>`}</tbody></table></div></section>`;
   }
@@ -1709,7 +1781,7 @@
       <section class="stats-grid">${statCard("ACADEMIC YEARS", years.length, "Current and planned years")}${statCard("ACTIVE CLASSES", classes.filter((item) => item.active !== false && !item.archived_at).length, "Across open academic years")}${statCard("ARCHIVED YEARS", years.filter((year) => year.archived_at || year.status === "closed").length, "Historical records retained")}</section>
       <section class="panel"><div class="panel-header"><div><h2>Open academic years</h2><p>Bookstore staff can add classes to a year already created by an administrator.</p></div></div><div class="table-wrap"><table><thead><tr><th>Academic year</th><th>Dates</th><th>Status</th><th>Classes</th><th></th></tr></thead><tbody>${activeYears.length ? activeYears.map((year) => { const count = classes.filter((item) => item.academic_year_id === year.id && item.active !== false).length; return `<tr><td><strong>${escapeHtml(year.year_label)}</strong></td><td>${escapeHtml(year.starts_on || "—")} → ${escapeHtml(year.ends_on || "—")}</td><td><span class="status-tag ${year.is_current ? "good" : ""}">${year.is_current ? "Current" : escapeHtml(year.status || "Planned")}</span></td><td>${count}</td><td>${!year.is_current && year.starts_on && year.ends_on && year.starts_on <= localDateIso() && year.ends_on >= localDateIso() && (!state.syncConfig || ["admin", "super_admin", "principal", "deputy_principal"].includes(currentRole())) ? `<button class="footer-link" data-set-current-year="${escapeHtml(year.id)}">Make current</button> · ` : ""}${canArchiveAcademicYears() && !year.is_current ? `<button class="footer-link" data-archive-year="${escapeHtml(year.id)}">Release / archive year</button>` : ""}</td></tr>`; }).join("") : `<tr><td colspan="5" class="table-empty">No open academic years. Add one to begin setup.</td></tr>`}</tbody></table></div></section>
       ${closedYears.length ? `<section class="panel" style="margin-top:16px"><div class="panel-header"><div><h2>Completed years awaiting archive</h2><p>These years are closed but have not yet been archived. Their classes remain preserved until the release step is confirmed.</p></div></div><div class="table-wrap"><table><thead><tr><th>Academic year</th><th>Classes</th><th>Action</th></tr></thead><tbody>${closedYears.map((year) => `<tr><td><strong>${escapeHtml(year.year_label)}</strong></td><td>${classes.filter((item) => item.academic_year_id === year.id).length}</td><td>${canArchiveAcademicYears() ? `<button class="footer-link" data-archive-year="${escapeHtml(year.id)}">Release / archive year</button>` : "Awaiting authorised release"}</td></tr>`).join("")}</tbody></table></div></section>` : ""}
-      <section class="panel" style="margin-top:16px"><div class="panel-header"><div><h2>Classes and streams</h2><p>Class names are entered as the school uses them, not generated from class numbers.</p></div></div><div class="table-wrap"><table><thead><tr><th>Form / grade</th><th>Class name</th><th>School section</th><th>Academic year</th><th>Members</th><th>Status</th><th></th></tr></thead><tbody>${classes.filter((item) => item.active !== false && !item.archived_at && openYearIds.has(item.academic_year_id)).length ? classes.filter((item) => item.active !== false && !item.archived_at && openYearIds.has(item.academic_year_id)).map((item) => `<tr><td>${escapeHtml(item.grade_label || item.grade || "—")}</td><td><button class="footer-link class-name-link" data-open-class="${escapeHtml(item.id)}">${escapeHtml(item.class_label || item.display_name || "—")}</button></td><td>${escapeHtml(item.school_section || "Both")}</td><td>${escapeHtml(years.find((year) => year.id === item.academic_year_id)?.year_label || "—")}</td><td><strong>${students.filter((student) => student.current_class === (item.class_label || item.display_name) && student.active !== false).length.toLocaleString()}</strong></td><td><span class="status-tag good">Active</span></td><td><button class="button button-small button-secondary" data-open-class="${escapeHtml(item.id)}">View class</button></td></tr>`).join("") : `<tr><td colspan="7" class="table-empty">No active classes yet. Add a class to start building its student register.</td></tr>`}</tbody></table></div></section>`;
+      <section class="panel" style="margin-top:16px"><div class="panel-header"><div><h2>Classes and streams</h2><p>Class names are entered as the school uses them, not generated from class numbers.</p></div></div><div class="table-wrap"><table><thead><tr><th>Form / grade</th><th>Class name</th><th>Academic year</th><th>Members</th><th>Status</th><th></th></tr></thead><tbody>${classes.filter((item) => item.active !== false && !item.archived_at && openYearIds.has(item.academic_year_id)).length ? classes.filter((item) => item.active !== false && !item.archived_at && openYearIds.has(item.academic_year_id)).map((item) => `<tr><td>${escapeHtml(item.grade_label || item.grade || "—")}</td><td><button class="footer-link class-name-link" data-open-class="${escapeHtml(item.id)}">${escapeHtml(item.class_label || item.display_name || "—")}</button></td><td>${escapeHtml(years.find((year) => year.id === item.academic_year_id)?.year_label || "—")}</td><td><strong>${students.filter((student) => student.current_class === (item.class_label || item.display_name) && student.active !== false).length.toLocaleString()}</strong></td><td><span class="status-tag good">Active</span></td><td><button class="button button-small button-secondary" data-open-class="${escapeHtml(item.id)}">View class</button></td></tr>`).join("") : `<tr><td colspan="6" class="table-empty">No active classes yet. Add a class to start building its student register.</td></tr>`}</tbody></table></div></section>`;
   }
 
 
@@ -1731,35 +1803,36 @@
     }
     const [students, loans, allocations] = await Promise.all([getAll("students"), getAll("loans"), getAll("textbook_allocations")]);
     const members = students.filter((student) => student.current_class === (classRecord.class_label || classRecord.display_name)
-      && (state.demoMode || !classRecord.school_section || student.school_section === classRecord.school_section)
       && student.active !== false).sort((a, b) => String(a.full_name).localeCompare(String(b.full_name)));
     const query = state.classRosterQuery.trim().toLowerCase();
     const visibleMembers = members.filter((student) => !query || [student.full_name, student.admission_number, student.house_code]
       .some((value) => String(value || "").toLowerCase().includes(query)));
-    const activeLoans = loans.filter((loan) => !loan.returned_at && members.some((student) => student.id === loan.student_id)).length;
-    const activeTextbooks = allocations.filter((item) => !item.returned_at && members.some((student) => student.id === item.student_id)).length;
+    const memberIds = new Set(members.map((student) => student.id));
+    const activeLoans = loans.filter((loan) => !loan.returned_at && memberIds.has(loan.student_id)).length;
+    const textbookCentreLoans = allocations.filter((item) => memberIds.has(item.student_id)).length;
+    const activeTextbooks = allocations.filter((item) => !item.returned_at && memberIds.has(item.student_id)).length;
     const actions = canManageStudents()
       ? `<div class="heading-actions"><button class="button button-secondary" data-action="class-student-template">Download class template</button><button class="button button-secondary" data-action="import-class-students">Import class list</button><button class="button button-primary" data-action="add-class-student">Add member</button></div>`
       : "";
     content.innerHTML = `${heading("ACADEMIC YEAR · CLASS DIRECTORY", classRecord.class_label || classRecord.display_name || "Class members", "Manage the students assigned to this class. Imports are validated before any student records are saved.", `<div class="heading-actions"><button class="button button-quiet" data-page-link="year-setup">Back to classes</button>${actions}</div>`)}
-      <section class="stats-grid">
+      <section class="stats-grid class-roster-stats">
         ${statCard("CLASS MEMBERS", members.length.toLocaleString(), "Active students assigned to this class")}
         ${statCard("LIBRARY LOANS", activeLoans.toLocaleString(), "Current library copies held by members")}
         ${statCard("TEXTBOOKS OUT", activeTextbooks.toLocaleString(), "Current textbook allocations to members")}
-        ${statCard("SCHOOL SECTION", classRecord.school_section || "Both", "Class register section")}
-      </section>
+        ${statCard("TEXTBOOK CENTRE LOANS", textbookCentreLoans.toLocaleString(), "All textbook loans recorded for this class")}
+              </section>
       <section class="panel">
         <div class="panel-header"><div><h2>Class register</h2><p>${visibleMembers.length.toLocaleString()} of ${members.length.toLocaleString()} members shown · ${escapeHtml(classRecord.grade_label || "")}</p></div>
           <div class="toolbar"><div class="search-wrap"><input class="search-input" id="class-roster-search" type="search" value="${escapeHtml(state.classRosterQuery)}" placeholder="Find a member by name or admission"></div></div>
         </div>
-        <div class="table-wrap"><table><thead><tr><th>Admission number</th><th>Student name</th><th>House</th><th>Section</th><th>Library loans</th><th>Textbooks out</th></tr></thead><tbody>
-          ${visibleMembers.length ? visibleMembers.map((student) => `<tr data-roster-search="${escapeHtml([student.full_name, student.admission_number, student.house_code].join(" ").toLowerCase())}"><td class="code-text">${escapeHtml(student.admission_number)}</td><td><strong>${escapeHtml(student.full_name)}</strong></td><td>${escapeHtml(student.house_code || "—")} · ${escapeHtml(houseName(student.house_code || ""))}</td><td>${escapeHtml(student.school_section || "—")}</td><td>${loans.filter((loan) => loan.student_id === student.id && !loan.returned_at).length}</td><td>${allocations.filter((item) => item.student_id === student.id && !item.returned_at).length}</td></tr>`).join("") : `<tr><td colspan="6" class="table-empty">${members.length ? "No members match this search." : "This class has no students yet. Add members individually or import the class list."}</td></tr>`}
+        <div class="table-wrap"><table><thead><tr><th>Admission number</th><th>Student name</th><th>House</th><th>Library loans</th><th>Textbooks out</th></tr></thead><tbody>
+          ${visibleMembers.length ? visibleMembers.map((student) => `<tr data-roster-search="${escapeHtml([student.full_name, student.admission_number, student.house_code].join(" ").toLowerCase())}"><td class="code-text">${escapeHtml(student.admission_number)}</td><td><strong>${escapeHtml(student.full_name)}</strong></td><td>${escapeHtml(student.house_code || "—")} · ${escapeHtml(houseName(student.house_code || ""))}</td><td>${loans.filter((loan) => loan.student_id === student.id && !loan.returned_at).length}</td><td>${allocations.filter((item) => item.student_id === student.id && !item.returned_at).length}</td></tr>`).join("") : `<tr><td colspan="5" class="table-empty">${members.length ? "No members match this search." : "This class has no students yet. Add members individually or import the class list."}</td></tr>`}
         </tbody></table></div>
       </section>`;
   }
 
   function downloadClassImportTemplate(classRecord) {
-    const rows = [["admission_number", "full_name", "house", "school_section"], ["DEMO-2001", "Sample Student", "T", classRecord.school_section || "G"]];
+    const rows = [["admission_number", "full_name", "house"], ["DEMO-2001", "Sample Student", "TG"]];
     const csv = rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\r\n");
     const url = URL.createObjectURL(new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" }));
     const link = document.createElement("a");
@@ -1789,7 +1862,7 @@
     const archivedClasses = classes.filter((item) => archivedIds.has(item.academic_year_id) || Boolean(item.archived_at));
     content.innerHTML = `${heading("BOOKSTORE · HISTORICAL RECORDS", "Archives", "Completed academic years and released classes are kept here for reference. Archived records are read-only; historical allocations and returns are never deleted.", '<button class="button button-secondary" data-page-link="year-setup">Back to year setup</button>')}
       <section class="stats-grid">${statCard("ARCHIVED YEARS", archivedYears.length, "Closed academic years")}${statCard("ARCHIVED CLASSES", archivedClasses.length, "Historical class records")}${statCard("CURRENT YEARS", years.filter((year) => year.is_current).length, "Not included in archives")}</section>
-      ${archivedYears.length ? archivedYears.map((year) => { const yearClasses = archivedClasses.filter((item) => item.academic_year_id === year.id); return `<section class="panel" style="margin-bottom:16px"><div class="panel-header"><div><h2>${escapeHtml(year.year_label)}</h2><p>${escapeHtml(year.starts_on || "—")} → ${escapeHtml(year.ends_on || "—")} · Archived ${escapeHtml(year.archived_at ? new Date(year.archived_at).toLocaleDateString("en-KE") : "as closed year")}</p></div><span class="status-tag">Archived · Read only</span></div><div class="table-wrap"><table><thead><tr><th>Form / grade</th><th>Class / stream</th><th>Section</th><th>Record status</th></tr></thead><tbody>${yearClasses.length ? yearClasses.map((item) => { const roster = rosterSnapshots.filter((student) => student.class_id === item.id); return `<tr><td>${escapeHtml(item.grade_label || item.grade || "—")}</td><td><strong>${escapeHtml(item.class_label || item.display_name || "—")}</strong><small>${roster.length} student roster record(s)</small></td><td>${escapeHtml(item.school_section || "—")}</td><td><span class="status-tag">Historical · Read only</span></td></tr>${roster.length ? `<tr><td colspan="4"><details><summary>View archived student list (${roster.length})</summary><div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>Admission number</th><th>Student</th><th>House</th><th>Section</th></tr></thead><tbody>${roster.map((student) => `<tr><td class="code-text">${escapeHtml(student.admission_number_snapshot)}</td><td>${escapeHtml(student.full_name_snapshot)}</td><td>${escapeHtml(student.house_code || "—")}</td><td>${escapeHtml(student.school_section || "—")}</td></tr>`).join("")}</tbody></table></div></details></td></tr>` : ""}`; }).join("") : `<tr><td colspan="4" class="table-empty">No class records were attached to this year.</td></tr>`}</tbody></table></div></section>`; }).join("") : `<section class="panel panel-empty"><strong>No archived academic years yet</strong><p>When a completed year is released from Academic Year Setup, it will appear here. Archiving never deletes student or textbook history.</p></section>`}`;
+      ${archivedYears.length ? archivedYears.map((year) => { const yearClasses = archivedClasses.filter((item) => item.academic_year_id === year.id); return `<section class="panel" style="margin-bottom:16px"><div class="panel-header"><div><h2>${escapeHtml(year.year_label)}</h2><p>${escapeHtml(year.starts_on || "—")} → ${escapeHtml(year.ends_on || "—")} · Archived ${escapeHtml(year.archived_at ? new Date(year.archived_at).toLocaleDateString("en-KE") : "as closed year")}</p></div><span class="status-tag">Archived · Read only</span></div><div class="table-wrap"><table><thead><tr><th>Form / grade</th><th>Class / stream</th><th>Record status</th></tr></thead><tbody>${yearClasses.length ? yearClasses.map((item) => { const roster = rosterSnapshots.filter((student) => student.class_id === item.id); return `<tr><td>${escapeHtml(item.grade_label || item.grade || "—")}</td><td><strong>${escapeHtml(item.class_label || item.display_name || "—")}</strong><small>${roster.length} student roster record(s)</small></td><td><span class="status-tag">Historical · Read only</span></td></tr>${roster.length ? `<tr><td colspan="3"><details><summary>View archived student list (${roster.length})</summary><div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>Admission number</th><th>Student</th><th>House</th></tr></thead><tbody>${roster.map((student) => `<tr><td class="code-text">${escapeHtml(student.admission_number_snapshot)}</td><td>${escapeHtml(student.full_name_snapshot)}</td><td>${escapeHtml(student.house_code || "—")}</td></tr>`).join("")}</tbody></table></div></details></td></tr>` : ""}`; }).join("") : `<tr><td colspan="3" class="table-empty">No class records were attached to this year.</td></tr>`}</tbody></table></div></section>`; }).join("") : `<section class="panel panel-empty"><strong>No archived academic years yet</strong><p>When a completed year is released from Academic Year Setup, it will appear here. Archiving never deletes student or textbook history.</p></section>`}`;
 
     const archivedTransactions = [
       ...loanHistory.filter((item) => item.returned_at).map((item) => ({
@@ -1871,14 +1944,14 @@
   async function addDemoClass() {
     const years = (await getAll("academic_years")).filter((year) => !year.archived_at && year.status !== "closed");
     if (!years.length) { notify("Add an academic year first.", true); return; }
-    const fields = [formField("Academic year", "academic_year_id", { choices: years.map((year) => [year.id, year.year_label]) }), formField("Form / grade", "grade_label", { maxLength: 60, placeholder: "Form 3" }), formField("Class / stream name", "stream_name", { maxLength: 60, placeholder: "Delta" }), formField("School section", "school_section", { choices: [["", "Not applicable / both"], ["G", "G"], ["B", "B"]] })].join("");
+    const fields = [formField("Academic year", "academic_year_id", { choices: years.map((year) => [year.id, year.year_label]) }), formField("Form / grade", "grade_label", { maxLength: 60, placeholder: "Form 3" }), formField("Class / stream name", "stream_name", { maxLength: 60, placeholder: "Delta" })].join("");
     showForm("Add bookstore class", fields, "Save class", async (form) => {
       const grade = String(form.get("grade_label")).trim(); const stream = String(form.get("stream_name")).trim();
       if (!grade || !stream) throw new Error("Enter both the form / grade and class name.");
-      const yearId = String(form.get("academic_year_id")); const section = String(form.get("school_section") || "") || null;
+      const yearId = String(form.get("academic_year_id"));
       const existing = await getAll("school_classes");
-      if (existing.some((item) => item.academic_year_id === yearId && item.grade_label === grade && item.class_label === `${grade} ${stream}` && (item.school_section || null) === section)) throw new Error("That class already exists for this academic year and section.");
-      await writeRecord("school_classes", { id: crypto.randomUUID(), academic_year_id: yearId, grade_label: grade, class_label: `${grade} ${stream}`, display_name: `${grade} ${stream}`, grade, active: true, archived_at: null, school_section: section, created_at: new Date().toISOString() });
+      if (existing.some((item) => item.academic_year_id === yearId && item.grade_label === grade && item.class_label === `${grade} ${stream}`)) throw new Error("That class already exists for this academic year.");
+      await writeRecord("school_classes", { id: crypto.randomUUID(), academic_year_id: yearId, grade_label: grade, class_label: `${grade} ${stream}`, display_name: `${grade} ${stream}`, grade, active: true, archived_at: null, created_at: new Date().toISOString() });
       await refresh();
     }, "BOOKSTORE · CLASS SETUP");
   }
@@ -1917,12 +1990,12 @@
     if (yearError) throw yearError;
     const openYears = (years || []).filter((year) => year.status !== "closed" && !year.archived_at);
     if (!openYears.length) { notify("Ask an administrator to create an open academic year first.", true); return; }
-    const fields = [formField("Academic year", "academic_year_id", { choices: openYears.map((year) => [year.id, year.year_label]) }), formField("Form / grade", "grade_label", { maxLength: 60, placeholder: "Form 3" }), formField("Class / stream name", "stream_name", { maxLength: 60, placeholder: "Delta", hint: "Enter the school's actual class name, not a class number." }), formField("School section", "school_section", { choices: [["", "Not applicable / both"], ["G", "G"], ["B", "B"]] })].join("");
+    const fields = [formField("Academic year", "academic_year_id", { choices: openYears.map((year) => [year.id, year.year_label]) }), formField("Form / grade", "grade_label", { maxLength: 60, placeholder: "Form 3" }), formField("Class / stream name", "stream_name", { maxLength: 60, placeholder: "Delta", hint: "Enter the school's actual class name, not a class number." })].join("");
     showForm("Add bookstore class", fields, "Save class", async (form) => {
       const gradeLabel = String(form.get("grade_label")).trim();
       const streamName = String(form.get("stream_name")).trim();
       if (!gradeLabel || !streamName) throw new Error("Enter both the form / grade and the class name.");
-      const { error } = await state.supabase.from("school_classes").insert({ academic_year_id: String(form.get("academic_year_id")), grade_label: gradeLabel, class_label: `${gradeLabel} ${streamName}`, school_section: String(form.get("school_section") || "") || null, active: true });
+      const { error } = await state.supabase.from("school_classes").insert({ academic_year_id: String(form.get("academic_year_id")), grade_label: gradeLabel, class_label: `${gradeLabel} ${streamName}`, active: true });
       if (error) throw error;
       await refresh();
     }, "CLASS DIRECTORY");
@@ -1940,7 +2013,7 @@
   async function addConnectedTeacherAssignment() {
     const [staffResult, classResult, subjectResult] = await Promise.all([
       state.supabase.from("staff_profiles").select("user_id,display_name,username,active").eq("active", true).order("display_name"),
-      state.supabase.from("school_classes").select("id,class_label,school_section,academic_year_id,active").eq("active", true).order("class_label"),
+      state.supabase.from("school_classes").select("id,class_label,academic_year_id,active").eq("active", true).order("class_label"),
       state.supabase.from("school_subjects").select("id,subject_name,active").eq("active", true).order("subject_name"),
     ]);
     for (const result of [staffResult, classResult, subjectResult]) if (result.error) throw result.error;
@@ -1948,7 +2021,7 @@
     const classes = classResult.data || [];
     const subjects = subjectResult.data || [];
     if (!staff.length || !classes.length) { notify("Add active staff profiles and classes before assigning teachers.", true); return; }
-    const fields = [formField("Staff member", "staff_user_id", { choices: staff.map((person) => [person.user_id, `${person.display_name} · ${person.username || ""}`]) }), formField("Assignment type", "assignment_type", { choices: [["class_teacher", "Class teacher"], ["subject_teacher", "Subject teacher"], ["substitute", "Substitute"]] }), formField("Class", "class_id", { choices: classes.map((item) => [item.id, `${item.class_label}${item.school_section ? ` · ${item.school_section}` : ""}`]) }), formField("Subject (required for subject teacher)", "subject_id", { required: false, choices: [["", "Not applicable"], ...subjects.map((item) => [item.id, item.subject_name])] }), formField("Starts on", "starts_on", { type: "date", value: localDateIso() }), formField("Ends on (optional)", "ends_on", { type: "date", required: false })].join("");
+    const fields = [formField("Staff member", "staff_user_id", { choices: staff.map((person) => [person.user_id, `${person.display_name} · ${person.username || ""}`]) }), formField("Assignment type", "assignment_type", { choices: [["class_teacher", "Class teacher"], ["subject_teacher", "Subject teacher"], ["substitute", "Substitute"]] }), formField("Class", "class_id", { choices: classes.map((item) => [item.id, item.class_label]) }), formField("Subject (required for subject teacher)", "subject_id", { required: false, choices: [["", "Not applicable"], ...subjects.map((item) => [item.id, item.subject_name])] }), formField("Starts on", "starts_on", { type: "date", value: localDateIso() }), formField("Ends on (optional)", "ends_on", { type: "date", required: false })].join("");
     showForm("Assign teacher", fields, "Save assignment", async (form) => {
       const assignmentType = String(form.get("assignment_type"));
       const subjectId = String(form.get("subject_id") || "") || null;
@@ -2263,7 +2336,7 @@
     const fields = [
       formField("Admission number", "admission_number", { maxLength: 64, full: true }),
       formField("Student full name", "full_name", { maxLength: 160, full: true }),
-      formField("House", "house_code", { choices: Object.entries(HOUSES).filter(([code]) => !classRecord?.school_section || code[1] === classRecord.school_section).map(([code, name]) => [code, `${code} · ${name}`]) }),
+      formField("House", "house_code", { choices: Object.entries(HOUSES).map(([code, name]) => [code, `${code} · ${name}`]) }),
       ...(classRecord ? [formField("Assigned class", "assigned_class", { value: classRecord.class_label || classRecord.display_name, maxLength: 100, full: true, readonly: true, hint: "This student will be added directly to the selected class." })] : [formField("Grade / form", "grade", { value: currentYear >= 2028 ? "Grade 10" : "Grade 9", maxLength: 40, full: true, hint: "Use the class label approved for the current academic year." }), formField("Class number", "class_number", { type: "number", min: 1, max: 999, value: 1 })]),
     ].join("");
     showForm("Register student", fields, "Register student", async (form) => {
@@ -2522,7 +2595,7 @@
 
   function downloadImportTemplate(kind) {
     const rows = kind === "students"
-      ? [["admission_number", "full_name", "house", "school_section", "grade", "class_number"]]
+      ? [["admission_number", "full_name", "house", "grade", "class_number"]]
       : kind === "textbooks"
         ? [["copy_code", "title", "subject", "publisher", "purchase_year", "condition"], ["INV-001-2020", "Mathematics Learner's Book", "Mathematics", "Publisher name", "2020", "Available"], ["INV-002-2020", "Mathematics Learner's Book", "Mathematics", "Publisher name", "2020", "Available"]]
         : [["accession_code", "title", "subject", "publisher", "purchase_year", "description"]];
@@ -2598,8 +2671,8 @@
     const generated = new Date().toLocaleString("en-KE", { timeZone: "Africa/Nairobi" });
     const preface = [["MOI HIGH SCHOOL - KABARAK"], ["KABARAK BOOK MANAGEMENT · AUDIT EXPORT"], ["Generated (Kenya time)", generated], []];
     const followUp = await getOutstandingExportRows();
-    const studentRows = [preface[0], preface[2], [], ["Admission number", "Full name", "House", "School section", "Grade", "Class", "Active", "Departure date"],
-      ...students.map((item) => [item.admission_number, item.full_name, item.house || item.house_code?.[0] || "", item.school_section || item.house_code?.[1] || "", item.grade, item.current_class || item.class_number || "", item.active !== false ? "Yes" : "No", item.departed_at || ""])];
+    const studentRows = [preface[0], preface[2], [], ["Admission number", "Full name", "House", "Grade", "Class", "Active", "Departure date"],
+      ...students.map((item) => [item.admission_number, item.full_name, item.house_code || item.house || "", item.grade, item.current_class || item.class_number || "", item.active !== false ? "Yes" : "No", item.departed_at || ""])];
     const libraryInventory = [preface[0], preface[2], [], ["Book code", "Title", "Subject", "Publisher", "Purchase year", "Condition", "Description"],
       ...books.map((item) => [item.accession_code, item.title, item.subject, item.publisher, item.purchase_year || "", item.condition, item.description || ""])];
     const libraryHistory = [preface[0], preface[2], [], ["Admission number", "Student", "Book code", "Book title", "Issued", "Due", "Returned", "Late days", "Estimated fee KES"],
@@ -2656,7 +2729,7 @@
     state.syncConfig = config?.url && config?.anonKey ? config : null;
     if (!config || !config.url || !config.anonKey) {
       setPublicGate(false);
-      setSyncStatus("offline", "Local demo only");
+      setSyncStatus(state.sharedDemoMode ? "error" : "offline", state.sharedDemoMode ? "Cloud demo unavailable" : "Local demo only");
       return;
     }
     state.syncConfig = config;
@@ -2669,7 +2742,10 @@
     try {
       const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
       state.supabase = createClient(config.url, config.anonKey, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+        auth: {
+          persistSession: true, autoRefreshToken: true, detectSessionInUrl: true,
+          ...(state.sharedDemoMode ? { storageKey: "kbms-shared-demo-auth" } : {}),
+        },
       });
       const { data, error } = await state.supabase.auth.getSession();
       if (error) throw error;
@@ -2982,6 +3058,7 @@
     setAuthFieldError(usernameInput, false);
     setAuthFieldError(passwordInput, false);
     form.classList.remove("auth-form-reject");
+    const transitionStartedAt = performance.now();
     button.disabled = true;
     button.textContent = "Signing in…";
     showSignInTransition();
@@ -3009,6 +3086,7 @@
       credentialsAccepted = true;
       state.sessionTask = startSessionSync(authData.session);
       if (state.sessionTask) await state.sessionTask;
+      await new Promise((resolve) => window.setTimeout(resolve, Math.max(0, 6000 - (performance.now() - transitionStartedAt) - 220)));
       byId("auth-dialog").close();
       form.reset();
       notify("Signed in. Synchronizing school records.");
@@ -3095,7 +3173,7 @@
       let classes = localClasses, staff = localStaff;
       if (state.syncConfig && state.session) {
         const [classResult, staffResult] = await Promise.all([
-          state.supabase.from("school_classes").select("id,class_label,display_name,grade_label,school_section").eq("active", true),
+          state.supabase.from("school_classes").select("id,class_label,display_name,grade_label").eq("active", true),
           state.supabase.from("staff_profiles").select("user_id,display_name,username,staff_number,active").eq("active", true),
         ]);
         if (!classResult.error) classes = classResult.data || classes;
@@ -3109,7 +3187,7 @@
       students.forEach((item) => add("student", item.id, item.full_name, `${item.admission_number} · ${item.current_class || item.grade || "Student"}`, `${item.full_name} ${item.admission_number} ${item.current_class} ${item.house_code}`));
       books.forEach((item) => add("library", item.id, item.title, `${item.accession_code} · ${item.subject || "Library"}`, `${item.title} ${item.accession_code} ${item.subject}`));
       copies.forEach((item) => add("textbook", item.id, item.title, `${item.copy_code} · ${item.subject || "Textbook"}`, `${item.title} ${item.copy_code} ${item.subject}`));
-      classes.forEach((item) => add("class", item.id, item.class_label || item.display_name, `${item.grade_label || ""} · ${item.school_section || "Both sections"}`, `${item.class_label} ${item.display_name} ${item.grade_label}`));
+      classes.forEach((item) => add("class", item.id, item.class_label || item.display_name, item.grade_label || "Class", `${item.class_label} ${item.display_name} ${item.grade_label}`));
       staff.forEach((item) => add("staff", item.user_id || item.id, item.display_name, item.username || item.staff_number || "Staff member", `${item.display_name} ${item.username} ${item.staff_number}`));
       if (task !== state.globalSearchTask) return;
       panel.innerHTML = results.length ? results.map((item) => `<button type="button" class="global-search-result" data-global-search-kind="${item.kind}" data-global-search-id="${escapeHtml(item.id)}"><span class="global-result-copy"><strong>${escapeHtml(item.title || "Untitled record")}</strong><small>${escapeHtml(item.detail)}</small></span><span class="global-result-type">${item.kind === "student" ? "STUDENT" : item.kind === "library" ? "LIBRARY" : item.kind === "textbook" ? "BOOKSTORE" : item.kind === "class" ? "CLASS" : "STAFF"}</span></button>`).join("") : `<div class="global-search-empty">No matching records found.</div>`;
@@ -3146,16 +3224,24 @@
       if (active) button.setAttribute("aria-current", "page");
       else button.removeAttribute("aria-current");
     });
+    const activeNavigation = document.querySelector(".nav-item[aria-current='page']")?.parentElement;
+    activeNavigation?.previousElementSibling?.setAttribute("aria-expanded", "true");
     history.replaceState(null, "", `#${page}`);
     refresh();
   }
 
   document.addEventListener("click", async (event) => {
+    const staffRow = event.target.closest("tr[data-staff-account]");
     const target = event.target.closest("button");
+    if (staffRow && !target) { openConnectedStaffAccount(staffRow); return; }
     if (!target) return;
     if (target.dataset.action === "public-enter") {
-      if (state.syncConfig) showAuthDialog();
+      if (state.syncConfig || state.sharedDemoMode) showAuthDialog();
       else { setPublicGate(false); await refresh(); }
+    }
+    if (target.hasAttribute("data-nav-section")) {
+      const expanded = target.getAttribute("aria-expanded") === "true";
+      target.setAttribute("aria-expanded", String(!expanded));
     }
     if (target.dataset.action === "mobile-nav-toggle") setMobileNavOpen(!byId("app-shell")?.classList.contains("mobile-nav-open"));
     if (target.dataset.action === "mobile-nav-close") setMobileNavOpen(false);
@@ -3191,7 +3277,16 @@
     if (target.dataset.setCurrentYear && !state.syncConfig) await setDemoCurrentAcademicYear(target.dataset.setCurrentYear);
     if (target.dataset.endStaffAssignment && state.syncConfig) await endConnectedTeacherAssignment(target.dataset.endStaffAssignment);
     if (target.dataset.action === "request-approval" && state.syncConfig) await createConnectedApprovalRequest();
-    if (target.dataset.staffAction && state.syncConfig) await connectedStaffAction(target.dataset.staffAction, target.dataset.userId);
+    if (target.dataset.selectStaff && state.syncConfig) {
+      openConnectedStaffAccount(target.closest("tr[data-staff-account]"));
+      return;
+    }
+    if (target.dataset.closeStaffAccount) byId("staff-account-dialog").close();
+    if (target.dataset.staffAction && state.syncConfig) {
+      const dialog = byId("staff-account-dialog");
+      if (dialog.open) dialog.close();
+      await connectedStaffAction(target.dataset.staffAction, target.dataset.userId);
+    }
     if (target.dataset.approvalId && state.syncConfig) await decideConnectedApproval(target.dataset.approvalId, target.dataset.decision);
     if (target.dataset.action === "demo-add-assignment" && !state.syncConfig) await addDemoAssignment();
     if (target.dataset.action === "demo-add-staff" && !state.syncConfig) await addDemoStaff();
@@ -3210,6 +3305,7 @@
       byId("csv-import").click();
     }
     if (target.dataset.action === "bulk-allocate-textbooks" && canManageTextbookAllocations()) await bulkAllocateTextbooks();
+    if (target.dataset.action === "seed-shared-demo" && canSeedSharedDemo()) await seedSharedDemoData(target);
     if (target.dataset.action === "load-demo-data" && !state.syncConfig) {
       if (window.confirm("Load fictional demo students and books into this empty browser workspace? This will not use real school data.")) {
         try { await loadFictionalDemoData(); } catch (error) { notify(error.message || "Demo records could not be loaded.", true); }
@@ -3388,7 +3484,7 @@
       // This prevents cached student or borrowing records from entering the public DOM on first load.
       await connectSupabase();
       document.querySelectorAll(".nav-item[data-page]").forEach((item) => { item.title = item.textContent.trim(); item.setAttribute("aria-label", item.textContent.trim()); });
-      if (!state.syncConfig) {
+      if (!state.syncConfig && !state.sharedDemoMode) {
         const [students, books, copies, allocations] = await Promise.all([getAll("students"), getAll("books"), getAll("textbook_copies"), getAll("textbook_allocations")]);
         if (!students.length && !books.length && !copies.length && !allocations.length) await loadFictionalDemoData();
         await upgradeDemoScenario();

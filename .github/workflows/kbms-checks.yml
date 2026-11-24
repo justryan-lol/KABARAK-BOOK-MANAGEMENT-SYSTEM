@@ -46,3 +46,9 @@ jobs:
           test -f dist/sw.js
           test -f dist/config.js
           grep -Fq '<link rel="stylesheet" href="./responsive.css">' dist/index.html
+
+      - name: Verify Pages build without dashboard build variables
+        run: |
+          env -u SUPABASE_URL -u SUPABASE_ANON_KEY bash scripts/build-cloudflare.sh
+          test -f dist/config.js
+          grep -Fq 'https://neurpjthaftsroqbepzl.supabase.co' dist/config.js

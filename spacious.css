@@ -6,6 +6,13 @@
 }
 #app-content > .page-heading { margin-bottom: var(--kbms-roomy-section); }
 #app-content > .stats-grid { gap: clamp(12px, 1.3vw, 18px); margin-bottom: var(--kbms-roomy-section); }
+#app-content > .class-roster-stats { width: min(100%, 1040px); grid-template-columns: repeat(4, minmax(0, 1fr)); margin-inline: auto; }
+@media (max-width: 1050px) {
+  #app-content > .class-roster-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  #app-content > .class-roster-stats { width: min(100%, 520px); grid-template-columns: minmax(0, 1fr); }
+}
 #app-content > .panel,
 #app-content > .overview-grid,
 #app-content > .quick-actions-panel,
@@ -87,4 +94,83 @@
   .book-card { padding: 12px; }
   .house-card { padding: 13px; }
   .table-wrap th, .table-wrap td { padding: 11px 10px; }
+}
+
+html, body { max-width: 100%; overflow-x: clip; }
+.app-shell, .main-area, .content-area, #app-content { min-width: 0; max-width: 100%; }
+.topbar {
+  border-color: rgb(110 119 130 / 14%);
+  background: rgb(255 255 255 / 86%);
+  backdrop-filter: blur(16px) saturate(1.08);
+}
+.global-search-field { background: rgb(255 255 255 / 78%); backdrop-filter: blur(10px); }
+.panel, .stat-card {
+  border-color: rgb(120 127 136 / 19%);
+  box-shadow: 0 1px 2px rgb(38 42 46 / 3%), 0 8px 24px rgb(38 42 46 / 3%);
+}
+.sidebar .nav-label {
+  gap: 12px;
+  padding: 18px 10px 9px;
+  border-radius: 6px;
+  color: #707b86;
+  font-size: 10px;
+  letter-spacing: .12em;
+  line-height: 1.4;
+  transition: background .16s ease, color .16s ease;
+}
+.sidebar .nav-label-spaced { padding-top: 20px; }
+.sidebar .nav-label:hover { background: #f6f7f8; color: #343b43; }
+.sidebar .nav-label::after { width: 7px; height: 7px; }
+.sidebar .workspace-label strong {
+  color: #775b2f;
+  font: italic 500 11px/1.5 "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
+  letter-spacing: .04em;
+}
+.table-wrap { width: 100%; max-width: 100%; overflow: visible; }
+.table-wrap table { width: 100%; min-width: 0 !important; table-layout: fixed; }
+.table-wrap th, .table-wrap td {
+  min-width: 0 !important;
+  max-width: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.table-wrap .row-actions { min-width: 0; flex-wrap: wrap; gap: 5px 8px; }
+.table-wrap .row-actions .footer-link { white-space: normal; text-align: left; }
+@media (max-width: 700px) {
+  .table-wrap th, .table-wrap td { padding: 7px 5px; font-size: 9px; line-height: 1.35; }
+  .table-wrap td:first-child, .table-wrap th:first-child { position: static; }
+  .table-wrap .code-text { overflow-wrap: anywhere; }
+  .table-wrap .row-actions { gap: 4px 6px; }
+  .table-wrap .row-actions .footer-link { font-size: 8px; }
+}
+@media (max-width: 390px) {
+  .table-wrap th, .table-wrap td { padding: 6px 3px; font-size: 8px; }
+  .table-wrap .status-tag { padding: 3px 4px; font-size: 7px; }
+}
+.staff-account-row { cursor: pointer; transition: background-color 140ms ease; }
+.staff-account-row:hover { background: rgb(99 8 46 / 4%); }
+.staff-account-open {
+  display: grid;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.staff-account-open strong { color: #343b43; }
+.staff-account-open small { color: #7c8792; }
+.staff-account-open:focus-visible { outline: 2px solid #c49a50; outline-offset: 3px; }
+.staff-account-dialog { max-width: 480px; padding: 22px; }
+.staff-account-dialog .dialog-head { margin-bottom: 18px; }
+.staff-account-details-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.staff-account-details-list > div { min-width: 0; padding: 11px; border: 1px solid #e9eaec; border-radius: 8px; background: rgb(248 249 250 / 78%); }
+.staff-account-details-list dt { color: #7c8792; font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.staff-account-details-list dd { margin: 5px 0 0; color: #343b43; font-size: 12px; overflow-wrap: anywhere; }
+.staff-account-actions { display: grid; gap: 8px; margin-top: 18px; }
+.staff-account-actions > .button { width: 100%; }
+@media (max-width: 520px) {
+  .staff-account-dialog { padding: 18px; }
+  .staff-account-details-list { grid-template-columns: minmax(0, 1fr); }
 }
